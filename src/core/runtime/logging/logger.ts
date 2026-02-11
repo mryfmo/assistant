@@ -44,8 +44,16 @@ export type RuntimeLogger = {
   emit: (event: RuntimeLogEventInput) => void;
 };
 
+function assertNonEmptyRuntimeLogField(value: string, fieldName: string): void {
+  if (value.trim().length === 0) {
+    throw new Error(`Invalid runtime log event: ${fieldName} must be a non-empty string.`);
+  }
+}
+
 export function buildRuntimeLogEventRecord(event: RuntimeLogEventInput): RuntimeLogEventRecord {
   assertCorrelationContext(event.context);
+  assertNonEmptyRuntimeLogField(event.eventType, "event_type");
+  assertNonEmptyRuntimeLogField(event.message, "message");
 
   const correlationFields = toCorrelationLogFields(event.context);
   const explicitTraceContext = parseTraceCorrelationContext({
