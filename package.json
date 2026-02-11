@@ -1,0 +1,17 @@
+{
+  "name": "assistant-orchestration-spec",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Implementation-ready docs and contracts for distributed agent orchestration",
+  "packageManager": "bun@1.3.9",
+  "scripts": {
+    "typecheck:ts": "tsc --project tooling/typescript/tsconfig.json --noEmit",
+    "lint:biome": "biome check .",
+    "format:biome": "biome format . --write",
+    "check:ts": "bun run typecheck:ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package skills.v1;
+
+enum SkillStatus {
+  SKILL_STATUS_UNSPECIFIED = 0;
+  SKILL_STATUS_RUNNING = 1;
+  SKILL_STATUS_SUCCEEDED = 2;
+  SKILL_STATUS_FAILED = 3;
+}
+
+enum SkillErrorCode {
+  SKILL_ERROR_CODE_UNSPECIFIED = 0;
+  SKILL_ERROR_CODE_INVALID_INPUT = 1;
+  SKILL_ERROR_CODE_POLICY_DENIED = 2;
+  SKILL_ERROR_CODE_RUNTIME_FAILURE = 3;
+}
+
+message SkillInvokeRequest {
+  string request_id = 1;
+  string skill_name = 2;
+  string workflow_id = 3;
+  bytes input_json = 4;
+}
+
+message SkillLogEvent {
+  string request_id = 1;
+  string workflow_id = 2;
+  string message = 3;
+  int64 timestamp_unix_ms = 4;
+}
+
+message SkillInvokeResponse {
+  string request_id = 1;
+  SkillStatus status = 2;
+  bytes output_json = 3;
+  SkillErrorCode error_code = 4;
+  string error_message = 5;
+}
+
+service SkillHost {
+  rpc InvokeSkill(SkillInvokeRequest) returns (SkillInvokeResponse);
+  rpc StreamSkillLogs(SkillInvokeRequest) returns (stream SkillLogEvent);
+}

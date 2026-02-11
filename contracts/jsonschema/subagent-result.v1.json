@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/subagent-result.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "workflow_id", "success"],
+  "properties": {
+    "request_id": { "type": "string" },
+    "workflow_id": { "type": "string" },
+    "success": { "type": "boolean" },
+    "summary": { "type": "string" },
+    "outputs": { "type": "object" },
+    "error": { "type": "string" }
+  }
+}

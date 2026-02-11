@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/subagent-request.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "workflow_id", "task", "constraints"],
+  "properties": {
+    "request_id": { "type": "string" },
+    "workflow_id": { "type": "string" },
+    "task": { "type": "string" },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout_seconds": { "type": "integer", "minimum": 1 },
+        "allowed_tools": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

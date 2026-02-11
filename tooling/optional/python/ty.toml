@@ -1,0 +1,6 @@
+[project]
+python_version = "3.11"
+
+[check]
+include = ["components"]
+strict = true

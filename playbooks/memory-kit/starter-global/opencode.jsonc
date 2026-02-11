@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "oh-my-opencode",
+    "opencode-mem"
+  ],
+  "permission": {
+    "skill": {
+      "*": "allow"
+    },
+    "tool": {
+      "memory": "allow"
+    }
+  }
+}

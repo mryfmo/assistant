@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Build and cache
+node_modules/
+.venv/
+dist/
+target/
+__pycache__/
+.ruff_cache/
+
+# Local runtime artifacts
+var/
+artifacts/

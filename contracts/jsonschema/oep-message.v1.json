@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/oep-message.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "type", "payload"],
+  "properties": {
+    "request_id": { "type": "string" },
+    "type": { "type": "string", "enum": ["request", "event", "result", "error"] },
+    "payload": { "type": "object" }
+  }
+}

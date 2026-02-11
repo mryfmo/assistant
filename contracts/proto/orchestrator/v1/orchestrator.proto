@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package orchestrator.v1;
+
+message Error {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+  string request_id = 4;
+}
+
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  TASK_STATE_QUEUED = 1;
+  TASK_STATE_LEASED = 2;
+  TASK_STATE_RUNNING = 3;
+  TASK_STATE_RETRY_WAIT = 4;
+  TASK_STATE_SUCCEEDED = 5;
+  TASK_STATE_FAILED = 6;
+  TASK_STATE_CANCELLED = 7;
+}
+
+enum TaskEventType {
+  TASK_EVENT_TYPE_UNSPECIFIED = 0;
+  TASK_EVENT_TYPE_CREATED = 1;
+  TASK_EVENT_TYPE_LEASED = 2;
+  TASK_EVENT_TYPE_STARTED = 3;
+  TASK_EVENT_TYPE_PROGRESS = 4;
+  TASK_EVENT_TYPE_COMPLETED = 5;
+  TASK_EVENT_TYPE_FAILED = 6;
+  TASK_EVENT_TYPE_CANCELLED = 7;
+}
+
+message PlanRun {
+  string request_id = 1;
+  string workflow_id = 2;
+  string tenant_id = 3;
+  string intent = 4;
+}
+
+message Task {
+  string request_id = 1;
+  string task_id = 2;
+  string workflow_id = 3;
+  string task_type = 4;
+  TaskState state = 5;
+  bytes spec_json = 6;
+}
+
+message Lease {
+  string request_id = 1;
+  string task_id = 2;
+  string worker_id = 3;
+  int64 expires_unix_ms = 4;
+}
+
+message TaskEvent {
+  string request_id = 1;
+  string workflow_id = 2;
+  string task_id = 3;
+  TaskEventType event_type = 4;
+  string message = 5;
+  int64 timestamp_unix_ms = 6;
+}
+
+message TaskResult {
+  string request_id = 1;
+  string workflow_id = 2;
+  string task_id = 3;
+  bool success = 4;
+  bytes result_json = 5;
+  Error error = 6;
+}
+
+message ArtifactRef {
+  string request_id = 1;
+  string workflow_id = 2;
+  string task_id = 3;
+  string uri = 4;
+  string digest = 5;
+}
+
+message Ack {
+  bool ok = 1;
+  Error error = 2;
+}
+
+message LeaseRequest {
+  string request_id = 1;
+  string worker_id = 2;
+  string worker_capabilities_json = 3;
+}
+
+message LeaseResponse {
+  Lease lease = 1;
+  Task task = 2;
+  Error error = 3;
+}
+
+service PlanService {
+  rpc SubmitPlan(PlanRun) returns (Ack);
+}
+
+service WorkerService {
+  rpc LeaseNextTask(LeaseRequest) returns (LeaseResponse);
+  rpc RenewLease(Lease) returns (Ack);
+  rpc ReportEvent(TaskEvent) returns (Ack);
+  rpc ReportResult(TaskResult) returns (Ack);
+}
+
+service ArtifactService {
+  rpc RegisterArtifact(ArtifactRef) returns (Ack);
+}
+
+service AdminService {
+  rpc CancelWorkflow(PlanRun) returns (Ack);
+}

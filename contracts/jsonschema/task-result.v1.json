@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/task-result.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "workflow_id", "success"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "workflow_id": { "type": "string" },
+    "success": { "type": "boolean" },
+    "outputs": { "type": "object" },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "retryable"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      }
+    }
+  }
+}
