@@ -64,20 +64,8 @@ jobs:
             cargo check --manifest-path "${manifest}" --all-targets --all-features
           done
       - name: G5 integration artifacts
-        run: |
-          test -f tests/verification/workflow-correlation-e2e.md
-          test -f tests/verification/plan-agent-no-side-effects-test.md
+        run: bun run check:g5-integration
       - name: G6 e2e artifacts
-        run: |
-          test -f tests/verification/clarification-gate-e2e.md
-          test -f tests/verification/promotion-policy-integration-test.md
+        run: bun run check:g6-e2e
       - name: G7 security artifacts
-        run: |
-          test -f docs/01-architecture/security-model.md
-          test -f docs/02-contracts/authn-authz.md
-          test -f tests/verification/mtls-enforcement-test.md
-          test -f tests/verification/logging-correlation-validation.md
-          test -f tests/verification/logging-redaction-validation.md
-          test -f tests/verification/logging-trace-context-validation.md
-          test -f SECURITY.md
-          bun run check:g7-logging
+        run: bun run check:g7-security
