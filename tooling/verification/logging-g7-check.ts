@@ -13,27 +13,32 @@ function assertCondition(condition: boolean, message: string): void {
   }
 }
 
-function loadLogEventSchemaRequiredFields(repoRoot: string): string[] {
+type ParsedLogEventSchema = {
+  required?: unknown;
+  properties?: unknown;
+  dependentRequired?: unknown;
+};
+
+function loadLogEventSchema(repoRoot: string): ParsedLogEventSchema {
   const schemaPath = resolve(repoRoot, "contracts/jsonschema/log-event.v1.json");
   const raw = readFileSync(schemaPath, "utf-8");
   const parsed: unknown = JSON.parse(raw);
 
-  if (typeof parsed !== "object" || parsed === null || !("required" in parsed)) {
-    throw new Error("log-event schema is missing required field definitions.");
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new Error("log-event schema is malformed.");
   }
 
-  const requiredFieldList = (parsed as { required?: unknown }).required;
+  return parsed as ParsedLogEventSchema;
+}
+
+function validateSchemaRequiredFields(schema: ParsedLogEventSchema): void {
+  const requiredFieldList = schema.required;
   if (
     !Array.isArray(requiredFieldList) ||
     requiredFieldList.some((entry) => typeof entry !== "string")
   ) {
     throw new Error("log-event schema required list must be string[].");
   }
-
-  return requiredFieldList as string[];
-}
-
-function validateSchemaRequiredFields(requiredFields: string[]): void {
   const expected = [
     "timestamp",
     "level",
@@ -46,10 +51,41 @@ function validateSchemaRequiredFields(requiredFields: string[]): void {
 
   for (const field of expected) {
     assertCondition(
-      requiredFields.includes(field),
+      requiredFieldList.includes(field),
       `log-event schema missing required field: ${field}`,
     );
   }
+}
+
+function validateSchemaTraceFields(schema: ParsedLogEventSchema): void {
+  const properties = schema.properties;
+  assertCondition(
+    typeof properties === "object" && properties !== null,
+    "log-event schema properties are required",
+  );
+
+  const propertyRecord = properties as Record<string, unknown>;
+  assertCondition("trace_id" in propertyRecord, "log-event schema must define trace_id");
+  assertCondition("span_id" in propertyRecord, "log-event schema must define span_id");
+
+  const dependentRequired = schema.dependentRequired;
+  assertCondition(
+    typeof dependentRequired === "object" && dependentRequired !== null,
+    "log-event schema must define dependentRequired for trace linkage",
+  );
+
+  const dependencyRecord = dependentRequired as Record<string, unknown>;
+  const traceDepends = dependencyRecord.trace_id;
+  const spanDepends = dependencyRecord.span_id;
+
+  assertCondition(
+    Array.isArray(traceDepends) && traceDepends.includes("span_id"),
+    "trace_id must require span_id",
+  );
+  assertCondition(
+    Array.isArray(spanDepends) && spanDepends.includes("trace_id"),
+    "span_id must require trace_id",
+  );
 }
 
 function validateRuntimeRecordBehavior(): void {
@@ -109,13 +145,50 @@ function validateRuntimeRecordBehavior(): void {
   );
   const payload = auditEvent.payload as { token?: unknown };
   assertCondition(payload.token === "[REDACTED]", "audit payload must redact token");
+
+  const tracedRecord = buildRuntimeLogEventRecord({
+    level: "debug",
+    eventType: "trace_linked_event",
+    message: "Trace-linked event.",
+    context,
+    traceId: "1234567890abcdef1234567890abcdef",
+    spanId: "1234567890abcdef",
+    data: {
+      status: "ok",
+    },
+  });
+
+  assertCondition(
+    tracedRecord.trace_id === "1234567890abcdef1234567890abcdef",
+    "trace_id should propagate to runtime log event",
+  );
+  assertCondition(
+    tracedRecord.span_id === "1234567890abcdef",
+    "span_id should propagate to runtime log event",
+  );
+
+  let rejectedPartialTraceContext = false;
+  try {
+    buildRuntimeLogEventRecord({
+      level: "info",
+      eventType: "invalid_partial_trace",
+      message: "This should fail.",
+      context,
+      traceId: "1234567890abcdef1234567890abcdef",
+    });
+  } catch (_error) {
+    rejectedPartialTraceContext = true;
+  }
+
+  assertCondition(rejectedPartialTraceContext, "partial trace context must be rejected");
 }
 
 function main(): void {
   const repoRoot = resolve(__dirname, "../..");
-  const requiredFields = loadLogEventSchemaRequiredFields(repoRoot);
+  const schema = loadLogEventSchema(repoRoot);
 
-  validateSchemaRequiredFields(requiredFields);
+  validateSchemaRequiredFields(schema);
+  validateSchemaTraceFields(schema);
   validateRuntimeRecordBehavior();
 
   process.stdout.write("G7 logging validation passed.\n");

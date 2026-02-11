@@ -6,6 +6,11 @@ import {
   toCorrelationLogFields,
 } from "./context";
 import { redactLogPayload } from "./redaction";
+import {
+  getActiveTraceCorrelationContext,
+  parseTraceCorrelationContext,
+  toTraceLogFields,
+} from "./trace";
 
 export type RuntimeLogLevel = "debug" | "info" | "warn" | "error";
 
@@ -15,6 +20,8 @@ export type RuntimeLogEventInput = {
   eventType: string;
   message: string;
   context: CorrelationContext;
+  traceId?: string;
+  spanId?: string;
   data?: unknown;
 };
 
@@ -27,6 +34,8 @@ export type RuntimeLogEventRecord = {
   task_id: string;
   request_id: string;
   worker_id?: string;
+  trace_id?: string;
+  span_id?: string;
   data?: unknown;
 };
 
@@ -39,6 +48,12 @@ export function buildRuntimeLogEventRecord(event: RuntimeLogEventInput): Runtime
   assertCorrelationContext(event.context);
 
   const correlationFields = toCorrelationLogFields(event.context);
+  const explicitTraceContext = parseTraceCorrelationContext({
+    traceId: event.traceId,
+    spanId: event.spanId,
+  });
+  const traceContext = explicitTraceContext ?? getActiveTraceCorrelationContext();
+  const traceFields = traceContext ? toTraceLogFields(traceContext) : {};
 
   return {
     timestamp: event.timestamp ?? new Date().toISOString(),
@@ -46,6 +61,7 @@ export function buildRuntimeLogEventRecord(event: RuntimeLogEventInput): Runtime
     event_type: event.eventType,
     message: event.message,
     ...correlationFields,
+    ...traceFields,
     data: redactLogPayload(event.data),
   };
 }
