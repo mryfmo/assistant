@@ -1,0 +1,36 @@
+requirements:
+  - id: ORCH-CORE-0001
+    statement: "Every workflow MUST include immutable workflow_id across all events and artifacts."
+    rationale: "Ensures traceability and auditability."
+    contracts: ["contracts/proto/orchestrator/v1/orchestrator.proto"]
+    gate: ["G5", "G6"]
+    verification: ["tests/verification/workflow-correlation-e2e.md"]
+    owner_doc: "docs/01-architecture/overview.md"
+  - id: ORCH-CORE-0002
+    statement: "Plan Agent MUST NOT perform side-effecting execution."
+    rationale: "Separates planning from execution risk."
+    contracts: ["contracts/jsonschema/openwork-plan.v1.json"]
+    gate: ["G6"]
+    verification: ["tests/verification/plan-agent-no-side-effects-test.md"]
+    owner_doc: "docs/01-architecture/overview.md"
+  - id: ORCH-UX-8001
+    statement: "Ambiguous or high-risk intent MUST trigger plain-language clarification before execution."
+    rationale: "Protects non-technical users from unintended actions."
+    contracts: ["contracts/jsonschema/openwork-plan.v1.json"]
+    gate: ["G6"]
+    verification: ["tests/verification/clarification-gate-e2e.md"]
+    owner_doc: "docs/07-user/clarification-policy.md"
+  - id: ORCH-SEC-5001
+    statement: "Production worker-control-plane communication MUST use mTLS."
+    rationale: "Prevents impersonation and traffic interception."
+    contracts: ["docs/02-contracts/authn-authz.md"]
+    gate: ["G7"]
+    verification: ["tests/verification/mtls-enforcement-test.md"]
+    owner_doc: "docs/01-architecture/security-model.md"
+  - id: ORCH-OPS-6001
+    statement: "Sandbox success MUST precede production promotion."
+    rationale: "Reduces production incident risk."
+    contracts: ["docs/04-ops/promotion-policy.md"]
+    gate: ["G6", "G7"]
+    verification: ["tests/verification/promotion-policy-integration-test.md"]
+    owner_doc: "docs/04-ops/promotion-policy.md"

@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+      - id: detect_optional
+        name: Detect optional language components
+        run: |
+          has_python=false
+          has_rust=false
+          if [ -d components ] && find components -type f -name "*.py" | grep -q .; then
+            has_python=true
+          fi
+          if [ -d components ] && find components -type f -name "*.rs" | grep -q .; then
+            has_rust=true
+          fi
+          echo "has_python=${has_python}" >> "$GITHUB_OUTPUT"
+          echo "has_rust=${has_rust}" >> "$GITHUB_OUTPUT"
+      - name: G0 docs
+        run: test -f README.md && test -f docs/BLUEPRINT.md
+      - name: G1 contracts
+        run: |
+          test -f contracts/proto/orchestrator/v1/orchestrator.proto
+          test -f contracts/proto/skills/v1/skills.proto
+          test -f contracts/jsonschema/openwork-plan.v1.json
+          test -f contracts/jsonschema/task-spec.v1.json
+          test -f contracts/jsonschema/task-result.v1.json
+          test -f contracts/jsonschema/skill-manifest.v1.json
+          test -f contracts/jsonschema/oep-message.v1.json
+          test -f contracts/jsonschema/subagent-request.v1.json
+          test -f contracts/jsonschema/subagent-result.v1.json
+          test -f contracts/openapi/openapi.yaml
+      - name: G2 TypeScript
+        run: bun run lint:biome && bun run typecheck:ts
+      - if: steps.detect_optional.outputs.has_python == 'true'
+        uses: astral-sh/setup-uv@v5
+      - if: steps.detect_optional.outputs.has_python == 'true'
+        name: G3 Python (optional)
+        run: |
+          uv run --project tooling/optional/python ruff format --check components
+          uv run --project tooling/optional/python ruff check components
+          uv run --project tooling/optional/python ty check components
+      - if: steps.detect_optional.outputs.has_rust == 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.detect_optional.outputs.has_rust == 'true'
+        name: G4 Rust (optional)
+        run: |
+          manifests="$(find components -name Cargo.toml)"
+          test -n "${manifests}"
+          for manifest in ${manifests}; do
+            cargo fmt --manifest-path "${manifest}" --check
+            cargo clippy --manifest-path "${manifest}" --all-targets --all-features -- -D warnings
+            cargo check --manifest-path "${manifest}" --all-targets --all-features
+          done
+      - name: G5 integration artifacts
+        run: |
+          test -f tests/verification/workflow-correlation-e2e.md
+          test -f tests/verification/plan-agent-no-side-effects-test.md
+      - name: G6 e2e artifacts
+        run: |
+          test -f tests/verification/clarification-gate-e2e.md
+          test -f tests/verification/promotion-policy-integration-test.md
+      - name: G7 security artifacts
+        run: |
+          test -f docs/01-architecture/security-model.md
+          test -f docs/02-contracts/authn-authz.md
+          test -f tests/verification/mtls-enforcement-test.md
+          test -f SECURITY.md
