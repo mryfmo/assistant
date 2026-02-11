@@ -181,6 +181,59 @@ function validateRuntimeRecordBehavior(): void {
   }
 
   assertCondition(rejectedPartialTraceContext, "partial trace context must be rejected");
+
+  let rejectedEmptyEventType = false;
+  try {
+    buildRuntimeLogEventRecord({
+      level: "info",
+      eventType: "",
+      message: "valid message",
+      context,
+    });
+  } catch (_error) {
+    rejectedEmptyEventType = true;
+  }
+
+  assertCondition(rejectedEmptyEventType, "empty event_type must be rejected");
+
+  let rejectedBlankMessage = false;
+  try {
+    buildRuntimeLogEventRecord({
+      level: "info",
+      eventType: "task_event",
+      message: "  ",
+      context,
+    });
+  } catch (_error) {
+    rejectedBlankMessage = true;
+  }
+
+  assertCondition(rejectedBlankMessage, "blank message must be rejected");
+
+  const cyclicPayload = {
+    safeField: "safe",
+    password: "secret",
+  } as {
+    safeField: string;
+    password: string;
+    self?: unknown;
+  };
+  cyclicPayload.self = cyclicPayload;
+
+  const cyclicRecord = buildRuntimeLogEventRecord({
+    level: "info",
+    eventType: "cyclic_payload",
+    message: "Cyclic payload check",
+    context,
+    data: cyclicPayload,
+  });
+
+  const cyclicData = cyclicRecord.data as {
+    password?: unknown;
+    self?: unknown;
+  };
+  assertCondition(cyclicData.password === "[REDACTED]", "cyclic payload secret must be redacted");
+  assertCondition(cyclicData.self === "[CIRCULAR]", "cyclic references must be safely replaced");
 }
 
 function main(): void {
