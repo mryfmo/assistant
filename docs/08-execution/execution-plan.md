@@ -6,7 +6,7 @@
 4. Implement worker leasing and retries.
 5. Implement skill compilation and sandbox dry-run.
 6. Implement approval and promotion control.
-7. Execute acceptance matrix and harden operations.
+7. Execute acceptance matrix with `check:g5-integration`, `check:g6-e2e`, and `check:g7-security`, then harden operations.
 
 # Milestone Acceptance
 

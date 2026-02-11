@@ -5,9 +5,9 @@
 - G2 TypeScript: `bun run lint:biome` + `bun run typecheck:ts`.
 - G3 Python (optional): run only when Python components are present.
 - G4 Rust (optional): run only when Rust components are present.
-- G5 Integration: verification artifacts for integration scenarios are present and trace-linked.
-- G6 E2E: verification artifacts for E2E scenarios are present and trace-linked.
-- G7 Security: security policy artifacts are present and consistent.
+- G5 Integration: executable integration validation MUST run `bun run check:g5-integration`.
+- G6 E2E: executable E2E validation MUST run `bun run check:g6-e2e`.
+- G7 Security: executable security validation MUST run `bun run check:g7-security`.
 
 # Gate Profiles
 
@@ -30,8 +30,10 @@ Activation criteria:
 - Any non-zero exit code fails the gate.
 - Missing required artifacts fail the gate.
 - Contract drift fails the gate.
+- Active gate command failure fails the gate.
 
 # Required Artifacts
 
 - Acceptance evidence linked in `docs/06-acceptance/acceptance-matrix.md`.
 - CI logs for each gate.
+- Gate scripts MUST validate requirement-to-matrix-to-verification consistency.
