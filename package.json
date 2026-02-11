@@ -9,7 +9,10 @@
     "lint:biome": "biome check .",
     "format:biome": "biome format . --write",
     "check:ts": "bun run typecheck:ts",
-    "check:g7-logging": "bun tooling/verification/logging-g7-check.ts"
+    "check:g7-logging": "bun tooling/verification/logging-g7-check.ts",
+    "check:g5-integration": "bun tooling/verification/integration-g5-check.ts",
+    "check:g6-e2e": "bun tooling/verification/e2e-g6-check.ts",
+    "check:g7-security": "bun tooling/verification/security-g7-check.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
