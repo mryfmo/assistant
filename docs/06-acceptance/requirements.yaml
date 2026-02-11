@@ -48,3 +48,10 @@ requirements:
     gate: ["G7"]
     verification: ["tests/verification/logging-redaction-validation.md"]
     owner_doc: "docs/01-architecture/security-model.md"
+  - id: ORCH-OPS-6003
+    statement: "Runtime log events MUST include trace_id and span_id when trace context is available."
+    rationale: "Links logs to distributed traces for end-to-end debugging."
+    contracts: ["contracts/jsonschema/log-event.v1.json"]
+    gate: ["G7"]
+    verification: ["tests/verification/logging-trace-context-validation.md"]
+    owner_doc: "docs/01-architecture/observability.md"

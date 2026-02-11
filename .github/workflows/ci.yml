@@ -78,5 +78,6 @@ jobs:
           test -f tests/verification/mtls-enforcement-test.md
           test -f tests/verification/logging-correlation-validation.md
           test -f tests/verification/logging-redaction-validation.md
+          test -f tests/verification/logging-trace-context-validation.md
           test -f SECURITY.md
           bun run check:g7-logging

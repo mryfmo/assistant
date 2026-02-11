@@ -9,3 +9,4 @@
 | ORCH-OPS-6001 | Sandbox must pass before prod promotion | `docs/04-ops/promotion-policy.md` | `tests/verification/promotion-policy-integration-test.md` | G6, G7 | Promotion blocked until sandbox evidence is present |
 | ORCH-OPS-6002 | Runtime logs include required correlation IDs | `contracts/jsonschema/log-event.v1.json` | `tests/verification/logging-correlation-validation.md` | G7 | `workflow_id`, `task_id`, and `request_id` are always present |
 | ORCH-SEC-5002 | Secrets are redacted from runtime logs | `contracts/jsonschema/log-event.v1.json`, `docs/01-architecture/security-model.md` | `tests/verification/logging-redaction-validation.md` | G7 | Secret-like fields are replaced with `[REDACTED]` |
+| ORCH-OPS-6003 | Trace-linked logs expose `trace_id` and `span_id` when available | `contracts/jsonschema/log-event.v1.json` | `tests/verification/logging-trace-context-validation.md` | G7 | Log records carry valid trace and span IDs when trace context exists |
