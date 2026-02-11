@@ -24,3 +24,15 @@
 1. Issue new cert bundle.
 2. Roll workers gradually.
 3. Revoke expired certs.
+
+# Missing Correlation IDs in Logs
+
+1. Run `bun run check:g7-logging` to verify schema/runtime logging constraints.
+2. Verify runtime event creation uses `buildRuntimeLogEventRecord` with full context.
+3. Block promotion until `workflow_id`, `task_id`, and `request_id` fields are restored.
+
+# Redaction Failure in Runtime Logs
+
+1. Stop further log export from affected workers.
+2. Verify redaction path by running `bun run check:g7-logging`.
+3. Rotate leaked credentials and file a security incident.

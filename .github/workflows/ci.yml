@@ -35,6 +35,7 @@ jobs:
           test -f contracts/jsonschema/openwork-plan.v1.json
           test -f contracts/jsonschema/task-spec.v1.json
           test -f contracts/jsonschema/task-result.v1.json
+          test -f contracts/jsonschema/log-event.v1.json
           test -f contracts/jsonschema/skill-manifest.v1.json
           test -f contracts/jsonschema/oep-message.v1.json
           test -f contracts/jsonschema/subagent-request.v1.json
@@ -75,4 +76,8 @@ jobs:
           test -f docs/01-architecture/security-model.md
           test -f docs/02-contracts/authn-authz.md
           test -f tests/verification/mtls-enforcement-test.md
+          test -f tests/verification/logging-correlation-validation.md
+          test -f tests/verification/logging-redaction-validation.md
+          test -f tests/verification/logging-trace-context-validation.md
           test -f SECURITY.md
+          bun run check:g7-logging

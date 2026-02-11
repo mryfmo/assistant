@@ -12,11 +12,16 @@ Logs, metrics, traces, and audit records.
 
 # Requirements (Traceable)
 
-- ORCH-OPS-6001: Every task event MUST include correlation IDs.
+- ORCH-OPS-6002: Every task event MUST include correlation IDs.
+- ORCH-OPS-6003: Runtime logs MUST include `trace_id` and `span_id` when trace context is available.
+- ORCH-SEC-5002: Secrets MUST NOT appear in runtime logs.
 
 # Logs (Schema)
 
-Required fields: `timestamp`, `level`, `workflow_id`, `task_id`, `worker_id`, `event_type`.
+Required fields: `timestamp`, `level`, `workflow_id`, `task_id`, `request_id`, `worker_id`, `event_type`.
+Optional trace linkage fields: `trace_id`, `span_id`.
+
+Schema contract: `contracts/jsonschema/log-event.v1.json`.
 
 # Metrics (Closed Set)
 
@@ -37,6 +42,7 @@ Spans required for planning, compilation, dispatch, execution, and artifact uplo
 # Validation
 
 Telemetry schema tests and dashboard integrity checks.
+Gate validation runs through `bun run check:g7-logging`.
 
 # Failure Modes
 
