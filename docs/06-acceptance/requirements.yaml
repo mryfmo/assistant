@@ -34,3 +34,17 @@ requirements:
     gate: ["G6", "G7"]
     verification: ["tests/verification/promotion-policy-integration-test.md"]
     owner_doc: "docs/04-ops/promotion-policy.md"
+  - id: ORCH-OPS-6002
+    statement: "Runtime log events MUST include workflow_id, task_id, and request_id correlation fields."
+    rationale: "Enables end-to-end traceability across orchestrator and worker events."
+    contracts: ["contracts/jsonschema/log-event.v1.json"]
+    gate: ["G7"]
+    verification: ["tests/verification/logging-correlation-validation.md"]
+    owner_doc: "docs/01-architecture/observability.md"
+  - id: ORCH-SEC-5002
+    statement: "Secrets and credentials MUST be redacted before logs are emitted or persisted."
+    rationale: "Prevents secret disclosure through operational telemetry."
+    contracts: ["contracts/jsonschema/log-event.v1.json", "docs/01-architecture/security-model.md"]
+    gate: ["G7"]
+    verification: ["tests/verification/logging-redaction-validation.md"]
+    owner_doc: "docs/01-architecture/security-model.md"
