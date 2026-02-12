@@ -40,6 +40,8 @@ export function createOrchestratorServiceHandlers(
   orchestrator: RuntimeOrchestrator,
   config: RuntimeConfig,
 ): RuntimeGrpcServiceHandlerOverrides {
+  const clarificationGate = createClarificationGate();
+
   return {
     plan: {
       submitPlan: (request) =>
@@ -47,6 +49,7 @@ export function createOrchestratorServiceHandlers(
           {
             workflowRepository: orchestrator.workflowRepository,
             taskRepository: orchestrator.taskRepository,
+            clarificationGate,
           },
           request,
           config,

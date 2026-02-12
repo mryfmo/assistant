@@ -101,4 +101,4 @@ The `spec-pack` profile is sufficient while implementation consists of specifica
 ## Current Status Snapshot
 
 - `spec-pack` baseline: Ready (all executable gates passing).
-- `runtime-implementation` release readiness: Pending (runtime execution coverage not yet complete).
+- `runtime-implementation` release readiness: Ready (M5-M11 runtime evidence closed and executable).

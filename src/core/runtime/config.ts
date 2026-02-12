@@ -18,6 +18,7 @@ export type RuntimeConfig = {
   tlsServerKeyPath?: string;
   tlsClientCertPath?: string;
   tlsClientKeyPath?: string;
+  allowMtlsMetadataFallback: boolean;
 };
 
 const DEFAULTS = {
@@ -126,6 +127,17 @@ export function loadRuntimeConfig(
     "ORCH_REQUIRE_MTLS",
     requireMtlsDefault,
   );
+  const allowMtlsMetadataFallback = parseBoolean(
+    environment.ORCH_ALLOW_MTLS_METADATA_FALLBACK,
+    "ORCH_ALLOW_MTLS_METADATA_FALLBACK",
+    true,
+  );
+
+  const maxActiveWorkflowsPerTenant = parsePositiveInt(
+    environment.ORCH_MAX_ACTIVE_WORKFLOWS_PER_TENANT,
+    "ORCH_MAX_ACTIVE_WORKFLOWS_PER_TENANT",
+    DEFAULTS.maxActiveWorkflowsPerTenant,
+  );
 
   if (env !== "sandbox" && !requireMtls) {
     throw new Error("Invalid ORCH_REQUIRE_MTLS: staging/prod require mTLS.");
@@ -141,8 +153,9 @@ export function loadRuntimeConfig(
     ),
     maxRetry: parsePositiveInt(environment.ORCH_MAX_RETRY, "ORCH_MAX_RETRY", DEFAULTS.maxRetry),
     requireMtls,
+    allowMtlsMetadataFallback,
     artifactBackend: parseArtifactBackend(environment.ORCH_ARTIFACT_BACKEND, env),
-    maxActiveWorkflowsPerTenant: DEFAULTS.maxActiveWorkflowsPerTenant,
+    maxActiveWorkflowsPerTenant,
     maxTaskPayloadBytes: DEFAULTS.maxTaskPayloadBytes,
     planStageTimeoutSeconds: DEFAULTS.planStageTimeoutSeconds,
     taskExecutionTimeoutSeconds: DEFAULTS.taskExecutionTimeoutSeconds,

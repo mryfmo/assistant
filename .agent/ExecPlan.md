@@ -20,11 +20,11 @@ Implement a production-grade orchestration platform where non-technical users ca
 - [x] **Phase 1 bootstrap started**: test runner script added, runtime config loader added, closed-set error envelope mapping added, and gRPC-aligned TypeScript service skeletons/interceptors added.
 - [x] **Phase 1**: Contract service skeletons and runtime scaffolding (generated stubs + network-bound gRPC transport binding complete; M5 closed).
 - [x] **Phase 2**: Persistence layer and closed-set state machine.
-- [x] **Phase 3**: implemented-local (happy-path orchestration complete in local/in-memory runtime); validated-runtime evidence pending (real Postgres).
-- [x] **Phase 4**: implemented-local (renewal/retry/timeout/limits/chaos tests present in local runtime); phase-closed pending validated-runtime evidence.
-- [x] **Phase 5**: implemented-local (Plan Agent, clarification blocking/resume, cancel workflow implemented and tested locally); phase-closed pending validated-runtime evidence.
-- [x] **Phase 6**: implemented-local (skill manifest, dry-run evidence, promotion path/approval/rollback logic implemented and tested locally); phase-closed pending validated-runtime evidence.
-- [x] **Phase 7**: implemented-local (mTLS wiring and remote topology paths implemented and tested locally); phase-closed pending validated-runtime evidence.
+- [x] **Phase 3**: phase-closed (real Postgres vertical-slice evidence executed; M7 closed).
+- [x] **Phase 4**: phase-closed (Postgres contention and chaos evidence executed; M8 closed).
+- [x] **Phase 5**: phase-closed (submit-path clarification and deterministic plan wiring validated in runtime flow; M9 closed).
+- [x] **Phase 6**: phase-closed (runtime promotion/approval/rollback execution path validated; M10 closed).
+- [x] **Phase 7**: phase-closed (transport-level mTLS evidence executed with fallback disabled; M11 closed).
 
 ## Milestones
 
@@ -36,11 +36,11 @@ Implement a production-grade orchestration platform where non-technical users ca
 | M4 | Remote topology pseudo-dispatch simulation complete | spec-pack | Done |
 | M5 | Services start, reject invalid/mismatched requests deterministically | runtime P1 | Done (in-process service host + network-bound gRPC transport) |
 | M6 | State transitions enforced by DB transactions; invalid edges impossible | runtime P2 | Done |
-| M7 | One-command local demo completes workflows end-to-end | runtime P3 | Implemented-local (real Postgres validated-runtime evidence pending) |
-| M8 | Chaos-concurrency test: no double-exec, no state corruption | runtime P4 | Implemented-local (validated-runtime evidence pending) |
-| M9 | Ambiguous intent blocks with well-formed question; resumes correctly | runtime P5 | Implemented-local (validated-runtime evidence pending) |
-| M10 | Skill cannot reach prod without sandbox evidence + explicit approval | runtime P6 | Implemented-local (validated-runtime evidence pending) |
-| M11 | staging/prod refuse non-mTLS; remote worker completes workflows | runtime P7 | Implemented-local (validated-runtime evidence pending) |
+| M7 | One-command local demo completes workflows end-to-end | runtime P3 | Phase-closed (validated-runtime on real Postgres) |
+| M8 | Chaos-concurrency test: no double-exec, no state corruption | runtime P4 | Phase-closed (validated-runtime on real Postgres contention) |
+| M9 | Ambiguous intent blocks with well-formed question; resumes correctly | runtime P5 | Phase-closed |
+| M10 | Skill cannot reach prod without sandbox evidence + explicit approval | runtime P6 | Phase-closed |
+| M11 | staging/prod refuse non-mTLS; remote worker completes workflows | runtime P7 | Phase-closed (transport-level mTLS evidence executed) |
 
 ## Phase Details
 
@@ -221,3 +221,7 @@ P1 → P2 → P3 → P4 → P6 → P7
 - 2026-02-12: P1 started with executable scaffolding: `test` script + runtime unit tests, `RuntimeConfig` loader, closed-set error envelope module, gRPC-aligned TypeScript service skeletons, and request-context logging interceptor wrappers.
 - 2026-02-12: M5 reached for service skeleton scope: in-process runtime service host starts and deterministically rejects invalid requests (`INVALID_REQUEST`) and contract-major mismatches (`CONTRACT_MISMATCH`) across Plan/Worker/Artifact/Admin entrypoints.
 - 2026-02-12: P1 closed: protobuf generated stubs added under `src/generated/proto`, and live network-bound gRPC transport binding validated via local unary calls with deterministic invalid/mismatch rejection.
+- 2026-02-12: Added runtime evidence test paths for real Postgres vertical slice and chaos contention (`tests/runtime/vertical-slice-postgres.e2e.test.ts`, `tests/runtime/chaos-concurrency-postgres.e2e.test.ts`) with DSN-gated execution via `ORCH_TEST_POSTGRES_DSN`.
+- 2026-02-12: Submit path now applies clarification blocking before persistence and embeds deterministic Plan Agent graph payload for clear intents (`src/core/orchestrator/submit-plan.ts`).
+- 2026-02-12: Added explicit runtime control flags for `ORCH_MAX_ACTIVE_WORKFLOWS_PER_TENANT` and `ORCH_ALLOW_MTLS_METADATA_FALLBACK`; transport-level mTLS evidence path added (`tests/runtime/mtls-transport-level.integration.test.ts`).
+- 2026-02-12: Executed validated-runtime evidence commands for closure: `ORCH_TEST_POSTGRES_DSN=postgresql://postgres:postgres@127.0.0.1:55432/postgres bun test tests/runtime/vertical-slice-postgres.e2e.test.ts tests/runtime/chaos-concurrency-postgres.e2e.test.ts` and `npx --yes tsx --test --test-force-exit --test-reporter=spec tests/runtime/mtls-transport-level.integration.test.ts` (pass).

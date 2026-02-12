@@ -9,8 +9,10 @@ export function fixturePath(name: string): string {
 export function createMtlsConfig(input: {
   env: RuntimeConfig["env"];
   requireMtls?: boolean;
+  allowMtlsMetadataFallback?: boolean;
 }): RuntimeConfig {
   const requireMtls = input.requireMtls ?? true;
+  const allowMtlsMetadataFallback = input.allowMtlsMetadataFallback ?? true;
 
   return {
     env: input.env,
@@ -18,6 +20,7 @@ export function createMtlsConfig(input: {
     leaseTtlSeconds: 30,
     maxRetry: 3,
     requireMtls,
+    allowMtlsMetadataFallback,
     artifactBackend: "local",
     maxActiveWorkflowsPerTenant: 200,
     maxTaskPayloadBytes: 512 * 1024,

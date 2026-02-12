@@ -43,4 +43,5 @@ Queue overload and timeout storm.
 
 # Operational Notes
 
-Tune limits by environment profile.
+- Tune limits by environment profile.
+- Set `ORCH_MAX_ACTIVE_WORKFLOWS_PER_TENANT` to override the default tenant cap.

@@ -19,6 +19,7 @@ test("ambiguous/high-risk intent blocks execution and emits one-question payload
   assert.equal(first.question.workflow_id, "wf-clarify-1");
   assert.equal(first.question.options.length, 2);
   assert.equal(first.question.question_id, "wf-clarify-1:clarification:1");
+  assert.equal(first.question.recommended_option_id, "cancel");
 
   const second = gate.evaluateIntent({
     workflow_id: "wf-clarify-1",

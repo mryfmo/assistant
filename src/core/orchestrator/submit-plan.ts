@@ -1,7 +1,10 @@
+import type { ClarificationGate } from "../clarification/clarification-gate";
 import { createErrorEnvelope } from "../contracts/error-envelope";
 import type { TaskRepository } from "../persistence/task-repository";
 import { PersistenceError } from "../persistence/types";
 import type { WorkflowRepository } from "../persistence/workflow-repository";
+import { stablePlanGraphJson } from "../planning/dag-determinism";
+import { buildDeterministicPlanGraph } from "../planning/plan-agent";
 import type { RuntimeConfig } from "../runtime/config";
 import type { Ack } from "../runtime/grpc/orchestrator-v1";
 import {
@@ -33,10 +36,34 @@ export async function submitPlan(
   repositories: {
     workflowRepository: WorkflowRepository;
     taskRepository: TaskRepository;
+    clarificationGate?: ClarificationGate;
   },
   input: SubmitPlanInput,
   config: RuntimeConfig,
 ): Promise<Ack> {
+  const clarification = repositories.clarificationGate?.evaluateIntent({
+    workflow_id: input.workflow_id,
+    intent: input.intent,
+  });
+  if (clarification?.status === "blocked") {
+    return {
+      ok: false,
+      error: createErrorEnvelope({
+        code: "POLICY_DENIED",
+        message: `Clarification required before execution: ${clarification.question.prompt}`,
+        requestId: input.request_id,
+        retryable: false,
+      }),
+    };
+  }
+
+  const planGraph = buildDeterministicPlanGraph({
+    workflow_id: input.workflow_id,
+    intent: input.intent,
+    ambiguous: false,
+    high_risk: false,
+  });
+
   const payloadBytes = new TextEncoder().encode(input.intent).byteLength;
   const payloadLimit = enforcePayloadLimit({
     payloadBytes,
@@ -100,7 +127,12 @@ export async function submitPlan(
       task_id: `${input.workflow_id}:task:0001`,
       workflow_id: input.workflow_id,
       task_type: "plan.execute",
-      spec_json: new TextEncoder().encode(JSON.stringify({ intent: input.intent })),
+      spec_json: new TextEncoder().encode(
+        JSON.stringify({
+          intent: input.intent,
+          plan_graph_json: stablePlanGraphJson(planGraph),
+        }),
+      ),
       priority: 100,
       idempotency_key: `${input.request_id}:task:0001`,
     });

@@ -67,6 +67,7 @@ test("LeaseNextTask follows priority -> created_at -> id ordering", async () => 
       leaseTtlSeconds: 30,
       maxRetry: 3,
       requireMtls: false,
+      allowMtlsMetadataFallback: true,
       artifactBackend: "local",
       maxActiveWorkflowsPerTenant: 200,
       maxTaskPayloadBytes: 512 * 1024,

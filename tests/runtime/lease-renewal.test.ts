@@ -48,6 +48,7 @@ test("RenewLease extends TTL and rejects invalid renewals deterministically", as
       leaseTtlSeconds: 30,
       maxRetry: 3,
       requireMtls: false,
+      allowMtlsMetadataFallback: true,
       artifactBackend: "local",
       maxActiveWorkflowsPerTenant: 200,
       maxTaskPayloadBytes: 512 * 1024,
