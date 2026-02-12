@@ -13,6 +13,11 @@ export type RuntimeConfig = {
   maxTaskPayloadBytes: number;
   planStageTimeoutSeconds: number;
   taskExecutionTimeoutSeconds: number;
+  tlsCaCertPath?: string;
+  tlsServerCertPath?: string;
+  tlsServerKeyPath?: string;
+  tlsClientCertPath?: string;
+  tlsClientKeyPath?: string;
 };
 
 const DEFAULTS = {
@@ -94,6 +99,38 @@ export function loadRuntimeConfig(
     assertNonEmptyString(dbDsn, "ORCH_DB_DSN");
   }
 
+  const tlsCaCertPath = environment.ORCH_TLS_CA_CERT_PATH;
+  const tlsServerCertPath = environment.ORCH_TLS_SERVER_CERT_PATH;
+  const tlsServerKeyPath = environment.ORCH_TLS_SERVER_KEY_PATH;
+  const tlsClientCertPath = environment.ORCH_TLS_CLIENT_CERT_PATH;
+  const tlsClientKeyPath = environment.ORCH_TLS_CLIENT_KEY_PATH;
+
+  if (tlsCaCertPath !== undefined) {
+    assertNonEmptyString(tlsCaCertPath, "ORCH_TLS_CA_CERT_PATH");
+  }
+  if (tlsServerCertPath !== undefined) {
+    assertNonEmptyString(tlsServerCertPath, "ORCH_TLS_SERVER_CERT_PATH");
+  }
+  if (tlsServerKeyPath !== undefined) {
+    assertNonEmptyString(tlsServerKeyPath, "ORCH_TLS_SERVER_KEY_PATH");
+  }
+  if (tlsClientCertPath !== undefined) {
+    assertNonEmptyString(tlsClientCertPath, "ORCH_TLS_CLIENT_CERT_PATH");
+  }
+  if (tlsClientKeyPath !== undefined) {
+    assertNonEmptyString(tlsClientKeyPath, "ORCH_TLS_CLIENT_KEY_PATH");
+  }
+
+  const requireMtls = parseBoolean(
+    environment.ORCH_REQUIRE_MTLS,
+    "ORCH_REQUIRE_MTLS",
+    requireMtlsDefault,
+  );
+
+  if (env !== "sandbox" && !requireMtls) {
+    throw new Error("Invalid ORCH_REQUIRE_MTLS: staging/prod require mTLS.");
+  }
+
   return {
     env,
     dbDsn,
@@ -103,15 +140,16 @@ export function loadRuntimeConfig(
       DEFAULTS.leaseTtlSeconds,
     ),
     maxRetry: parsePositiveInt(environment.ORCH_MAX_RETRY, "ORCH_MAX_RETRY", DEFAULTS.maxRetry),
-    requireMtls: parseBoolean(
-      environment.ORCH_REQUIRE_MTLS,
-      "ORCH_REQUIRE_MTLS",
-      requireMtlsDefault,
-    ),
+    requireMtls,
     artifactBackend: parseArtifactBackend(environment.ORCH_ARTIFACT_BACKEND, env),
     maxActiveWorkflowsPerTenant: DEFAULTS.maxActiveWorkflowsPerTenant,
     maxTaskPayloadBytes: DEFAULTS.maxTaskPayloadBytes,
     planStageTimeoutSeconds: DEFAULTS.planStageTimeoutSeconds,
     taskExecutionTimeoutSeconds: DEFAULTS.taskExecutionTimeoutSeconds,
+    tlsCaCertPath,
+    tlsServerCertPath,
+    tlsServerKeyPath,
+    tlsClientCertPath,
+    tlsClientKeyPath,
   };
 }

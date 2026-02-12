@@ -43,7 +43,9 @@ test("ReportResult persists terminal and non-terminal outcomes deterministically
   assert.equal(retryableFailure.ok, true);
 
   const taskAfterRetry = await orchestrator.taskRepository.getTask(leasedTaskId);
-  assert.equal(taskAfterRetry?.state, "queued");
+  assert.equal(taskAfterRetry?.state, "retry_wait");
+
+  await orchestrator.taskRepository.requeueDueRetries(Date.now() + 60_000);
 
   const leaseAgain = await client.leaseNextTask({
     request_id: "req-report-4",

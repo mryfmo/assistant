@@ -4,6 +4,7 @@ import {
   createOrchestratorServiceHandlers,
   createRuntimeOrchestrator,
 } from "../../orchestrator";
+import { type WorkerAuthorizationPolicy, authorizeWorker } from "../../security/worker-identity";
 import { type RuntimeConfig, loadRuntimeConfig } from "../config";
 import { type RuntimeLogger, createRuntimeLogger } from "../logging/logger";
 import { withRuntimeRequestContext } from "./interceptors";
@@ -87,6 +88,7 @@ function mergeHandlers(
 export class RuntimeGrpcServiceServer {
   private started = false;
   private readonly handlers: GrpcServiceHandlers;
+  private readonly workerAuthorizationPolicy?: WorkerAuthorizationPolicy;
   private readonly submitPlanHandler: (request: PlanRun) => Promise<Ack>;
   private readonly leaseNextTaskHandler: (request: LeaseRequest) => Promise<LeaseResponse>;
   private readonly renewLeaseHandler: (request: Lease) => Promise<Ack>;
@@ -96,9 +98,14 @@ export class RuntimeGrpcServiceServer {
   private readonly cancelWorkflowHandler: (request: PlanRun) => Promise<Ack>;
 
   constructor(
-    options: { handlers?: RuntimeGrpcServiceHandlerOverrides; logger?: RuntimeLogger } = {},
+    options: {
+      handlers?: RuntimeGrpcServiceHandlerOverrides;
+      logger?: RuntimeLogger;
+      workerAuthorizationPolicy?: WorkerAuthorizationPolicy;
+    } = {},
   ) {
     this.handlers = mergeHandlers(options.handlers);
+    this.workerAuthorizationPolicy = options.workerAuthorizationPolicy;
     const logger = options.logger ?? createRuntimeLogger();
 
     this.submitPlanHandler = withRuntimeRequestContext({
@@ -273,6 +280,23 @@ export class RuntimeGrpcServiceServer {
       return this.leaseResponseFromError(requestValidationError);
     }
 
+    const workerAuthorization = authorizeWorker({
+      policy: this.workerAuthorizationPolicy,
+      workerId: request.worker_id,
+      workerCapabilitiesJson: request.worker_capabilities_json,
+      requiredScope: "task.dispatch",
+    });
+    if (!workerAuthorization.ok) {
+      return this.leaseResponseFromError(
+        createErrorEnvelope({
+          code: workerAuthorization.code,
+          message: workerAuthorization.message,
+          requestId: request.request_id,
+          retryable: false,
+        }),
+      );
+    }
+
     try {
       return await this.leaseNextTaskHandler(request);
     } catch (error) {
@@ -293,6 +317,23 @@ export class RuntimeGrpcServiceServer {
     const requestValidationError = validateLease(request, "WorkerService.RenewLease");
     if (requestValidationError !== undefined) {
       return this.ackFromError(requestValidationError);
+    }
+
+    const workerAuthorization = authorizeWorker({
+      policy: this.workerAuthorizationPolicy,
+      workerId: request.worker_id,
+      workerCapabilitiesJson: JSON.stringify({ scopes: ["task.execute"] }),
+      requiredScope: "task.execute",
+    });
+    if (!workerAuthorization.ok) {
+      return this.ackFromError(
+        createErrorEnvelope({
+          code: workerAuthorization.code,
+          message: workerAuthorization.message,
+          requestId: request.request_id,
+          retryable: false,
+        }),
+      );
     }
 
     try {

@@ -13,3 +13,4 @@
 
 - Non-mTLS connection is rejected.
 - Valid mTLS connection is accepted.
+- Certificate rotation runbook is documented: `docs/04-ops/certificate-rotation-runbook.md`.

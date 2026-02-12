@@ -72,6 +72,7 @@ export class TaskRepository {
         spec_json: new Uint8Array(input.spec_json),
         priority: input.priority ?? 100,
         retry_count: 0,
+        next_retry_unix_ms: 0,
         idempotency_key: input.idempotency_key,
         created_at: timestamp,
         updated_at: timestamp,
@@ -100,6 +101,19 @@ export class TaskRepository {
     lease_ttl_ms: number;
   }): Promise<{ task: TaskRecord; lease: LeaseRecord } | undefined> {
     return this.db.transaction((tx) => {
+      for (const task of tx.store.tasks.values()) {
+        if (task.state === "retry_wait" && task.next_retry_unix_ms <= now(tx)) {
+          const transitionCheck = canTransitionTaskState(task.state, "queued");
+          if (!transitionCheck.ok) {
+            throw new PersistenceError(transitionCheck.code, transitionCheck.message);
+          }
+
+          task.state = "queued";
+          task.next_retry_unix_ms = 0;
+          task.updated_at = now(tx);
+        }
+      }
+
       const candidate = [...tx.store.tasks.values()]
         .filter((task) => task.state === "queued")
         .sort(deterministicTaskOrder)[0];
@@ -169,6 +183,9 @@ export class TaskRepository {
 
       task.state = input.to_state;
       task.updated_at = now(tx);
+      if (input.to_state !== "retry_wait") {
+        task.next_retry_unix_ms = 0;
+      }
 
       if (input.to_state !== "leased" && input.to_state !== "running") {
         tx.store.leases.delete(task.task_id);
@@ -222,6 +239,9 @@ export class TaskRepository {
 
       task.state = nextState;
       task.updated_at = now(tx);
+      if (nextState !== "retry_wait") {
+        task.next_retry_unix_ms = 0;
+      }
 
       tx.store.leases.delete(task.task_id);
 
@@ -235,6 +255,56 @@ export class TaskRepository {
       expected_from_state: "retry_wait",
       to_state: "queued",
     });
+  }
+
+  async scheduleRetry(taskId: string, delayMs: number): Promise<TaskRecord> {
+    return this.db.transaction((tx) => {
+      const task = tx.store.tasks.get(taskId);
+      if (task === undefined) {
+        throw new PersistenceError("TASK_NOT_FOUND", `Task ${taskId} does not exist.`);
+      }
+      if (task.state !== "retry_wait") {
+        throw new PersistenceError(
+          "ILLEGAL_TASK_TRANSITION",
+          `Task ${taskId} is ${task.state}; expected retry_wait to schedule retry.`,
+        );
+      }
+
+      task.next_retry_unix_ms = now(tx) + delayMs;
+      task.updated_at = now(tx);
+      return cloneTask(task);
+    });
+  }
+
+  async requeueDueRetries(referenceTimeMs: number): Promise<number> {
+    return this.db.transaction((tx) => {
+      let updatedCount = 0;
+
+      for (const task of tx.store.tasks.values()) {
+        if (task.state !== "retry_wait") {
+          continue;
+        }
+        if (task.next_retry_unix_ms > referenceTimeMs) {
+          continue;
+        }
+
+        const transitionCheck = canTransitionTaskState(task.state, "queued");
+        if (!transitionCheck.ok) {
+          throw new PersistenceError(transitionCheck.code, transitionCheck.message);
+        }
+
+        task.state = "queued";
+        task.next_retry_unix_ms = 0;
+        task.updated_at = now(tx);
+        updatedCount += 1;
+      }
+
+      return updatedCount;
+    });
+  }
+
+  async countQueuedTasks(): Promise<number> {
+    return [...this.db.readStore().tasks.values()].filter((task) => task.state === "queued").length;
   }
 
   async countNonTerminalTasks(workflowId: string): Promise<number> {

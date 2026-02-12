@@ -2,7 +2,13 @@ import { createErrorEnvelope } from "../contracts/error-envelope";
 import type { TaskRepository } from "../persistence/task-repository";
 import { PersistenceError } from "../persistence/types";
 import type { WorkflowRepository } from "../persistence/workflow-repository";
+import type { RuntimeConfig } from "../runtime/config";
 import type { Ack } from "../runtime/grpc/orchestrator-v1";
+import {
+  enforceLoadShedding,
+  enforcePayloadLimit,
+  enforceTenantWorkflowLimit,
+} from "./runtime-limits";
 
 export type SubmitPlanInput = {
   request_id: string;
@@ -29,7 +35,61 @@ export async function submitPlan(
     taskRepository: TaskRepository;
   },
   input: SubmitPlanInput,
+  config: RuntimeConfig,
 ): Promise<Ack> {
+  const payloadBytes = new TextEncoder().encode(input.intent).byteLength;
+  const payloadLimit = enforcePayloadLimit({
+    payloadBytes,
+    maxPayloadBytes: config.maxTaskPayloadBytes,
+  });
+  if (!payloadLimit.ok) {
+    return {
+      ok: false,
+      error: createErrorEnvelope({
+        code: payloadLimit.code,
+        message: payloadLimit.message,
+        requestId: input.request_id,
+        retryable: false,
+      }),
+    };
+  }
+
+  const activeWorkflowCount = await repositories.workflowRepository.countActiveWorkflowsByTenant(
+    input.tenant_id,
+  );
+  const tenantLimit = enforceTenantWorkflowLimit({
+    activeWorkflowCount,
+    maxActiveWorkflows: config.maxActiveWorkflowsPerTenant,
+  });
+  if (!tenantLimit.ok) {
+    return {
+      ok: false,
+      error: createErrorEnvelope({
+        code: tenantLimit.code,
+        message: tenantLimit.message,
+        requestId: input.request_id,
+        retryable: false,
+      }),
+    };
+  }
+
+  const queuedTaskCount = await repositories.taskRepository.countQueuedTasks();
+  const loadShedding = enforceLoadShedding({
+    queuedTaskCount,
+    maxActiveWorkflowsPerTenant: config.maxActiveWorkflowsPerTenant,
+  });
+  if (!loadShedding.ok) {
+    return {
+      ok: false,
+      error: createErrorEnvelope({
+        code: loadShedding.code,
+        message: loadShedding.message,
+        requestId: input.request_id,
+        retryable: false,
+      }),
+    };
+  }
+
   try {
     await repositories.workflowRepository.createWorkflow({
       workflow_id: input.workflow_id,

@@ -18,6 +18,7 @@ export type TaskRecord = {
   spec_json: Uint8Array;
   priority: number;
   retry_count: number;
+  next_retry_unix_ms: number;
   idempotency_key: string;
   created_at: number;
   updated_at: number;

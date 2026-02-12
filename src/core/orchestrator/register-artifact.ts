@@ -2,6 +2,10 @@ import { createErrorEnvelope } from "../contracts/error-envelope";
 import type { ArtifactRepository } from "../persistence/artifact-repository";
 import { PersistenceError } from "../persistence/types";
 import type { Ack, ArtifactRef } from "../runtime/grpc/orchestrator-v1";
+import {
+  isSandboxDryRunEvidenceRef,
+  sandboxDryRunEvidenceUriPrefix,
+} from "../skills/sandbox-dryrun";
 
 function buildArtifactId(ref: ArtifactRef): string {
   return `${ref.workflow_id}:${ref.task_id}:${ref.digest}`;
@@ -13,6 +17,22 @@ export async function registerArtifact(
   },
   request: ArtifactRef,
 ): Promise<Ack> {
+  if (
+    request.uri.startsWith(sandboxDryRunEvidenceUriPrefix) &&
+    !isSandboxDryRunEvidenceRef({ uri: request.uri, digest: request.digest })
+  ) {
+    return {
+      ok: false,
+      error: createErrorEnvelope({
+        code: "POLICY_DENIED",
+        message:
+          "Sandbox dry-run evidence artifacts must use URI evidence://sandbox/dry-run/* with sha256 digest.",
+        requestId: request.request_id,
+        retryable: false,
+      }),
+    };
+  }
+
   try {
     await repositories.artifactRepository.registerArtifact({
       artifact_id: buildArtifactId(request),
