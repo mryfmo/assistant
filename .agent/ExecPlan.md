@@ -39,8 +39,8 @@ Implement a production-grade orchestration platform where non-technical users ca
 | M7 | One-command local demo completes workflows end-to-end | runtime P3 | Phase-closed (validated-runtime on real Postgres) |
 | M8 | Chaos-concurrency test: no double-exec, no state corruption | runtime P4 | Phase-closed (validated-runtime on real Postgres contention) |
 | M9 | Ambiguous intent blocks with well-formed question; resumes correctly | runtime P5 | Phase-closed |
-| M10 | Skill cannot reach prod without sandbox evidence + explicit approval | runtime P6 | Phase-closed |
-| M11 | staging/prod refuse non-mTLS; remote worker completes workflows | runtime P7 | Phase-closed (transport-level mTLS evidence executed) |
+| M10 | Skill cannot reach prod without sandbox evidence + explicit approval | runtime P6 | Phase-closed (G6+G7 evidence required for `ORCH-OPS-6001`) |
+| M11 | staging/prod refuse non-mTLS; remote worker completes workflows | runtime P7 | Phase-closed (transport-level mTLS evidence executed with `ORCH_ALLOW_MTLS_METADATA_FALLBACK=false`) |
 
 ## Phase Details
 

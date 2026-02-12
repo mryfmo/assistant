@@ -2,9 +2,9 @@
 
 This is the single source of truth for completion criteria. `docs/06-acceptance/completion-criteria.md` is a summary reference to this file.
 
-Implementation is complete only when all conditions below are true.
+Implementation is complete only when all conditions below are true, and status must be downgraded from `Ready` if any required gate fails.
 
-Audit sync date: 2026-02-12
+Audit sync date: 2026-02-13
 
 ## Baseline Completion (`spec-pack` profile)
 
@@ -20,7 +20,10 @@ The `spec-pack` profile validates specification completeness, contract consisten
    - `bun run check:g6-topology`
    - `bun run check:g7-security`
 2. Local and remote topology invariants for Plan Agent x1 and Task Execution Agents xN pass deterministic pseudo-dispatch validation (`bun run check:g6-topology`, `ORCH-INT-4001`).
-3. Clarification and promotion requirements remain contract-linked and enforced in spec validation gates (`ORCH-UX-8001`, `ORCH-OPS-6001`, `ORCH-OPS-6004`).
+3. Clarification and promotion requirements remain contract-linked and enforced by profile gates:
+    - `ORCH-UX-8001` → `G6`
+    - `ORCH-OPS-6004` → `G6`
+    - `ORCH-OPS-6001` → `G6` and `G7` (Phase 7 closure requires both gates to be satisfied)
 4. Contract compatibility checks pass for protobuf and schema artifacts (`bun run check:g1-contracts`, `ORCH-API-1001`).
 5. Security/logging requirements pass executable checks (`bun run check:g7-security`, `ORCH-OPS-6002`, `ORCH-OPS-6003`, `ORCH-SEC-5002`).
 
@@ -75,11 +78,12 @@ A milestone MUST NOT be marked complete when it is only `implemented-local` and 
 - Sandbox success precedes production promotion (`ORCH-OPS-6001`).
 - Approval/promotion flow blocks bypass paths (`ORCH-OPS-6004`).
 - Automatic rollback triggers on error rate >0.1% for 5 minutes.
+- M10 phase closure is conditional on both `check:g6-topology` and `check:g7-security` passing for `ORCH-OPS-6001` evidence.
 
 ### Phase 7 — mTLS + Remote (M11)
 
 - Production worker-control-plane communication uses mTLS (`ORCH-SEC-5001`).
-- Runtime readiness evidence for M11 requires transport-level gRPC mTLS. Bun compatibility fallback metadata is local-only and does not satisfy phase closure.
+- Runtime readiness evidence for M11 requires transport-level gRPC mTLS with metadata fallback disabled (`ORCH_ALLOW_MTLS_METADATA_FALLBACK=false`). Bun metadata fallback is local-only and does not satisfy phase closure.
 - Remote topology validates with live remote workers (`ORCH-INT-4001` remote).
 - Runbooks and rollback procedures validated by operational drills.
 
