@@ -41,7 +41,7 @@ export function formatClarificationQuestion(input: {
         label: "Cancel this workflow",
       },
     ],
-    recommended_option_id: "proceed",
+    recommended_option_id: input.reason === "high_risk" ? "cancel" : "proceed",
     consequence: "Execution remains blocked until you answer this question.",
   };
 }

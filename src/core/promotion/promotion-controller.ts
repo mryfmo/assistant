@@ -1,6 +1,11 @@
 import type { ArtifactRecord } from "../persistence/types";
 import { assertSandboxDryRunEvidence } from "../skills/sandbox-dryrun";
 import type { ApprovalGate, PromotionBoundary } from "./approval-gate";
+import {
+  type RollbackPolicy,
+  defaultRollbackPolicy,
+  evaluateRollbackPolicy,
+} from "./rollback-policy";
 
 export type PromotionStage = "sandbox" | "staging" | "prod";
 
@@ -15,7 +20,8 @@ export type PromotionAuditEvent = {
     | "INVALID_PATH"
     | "BYPASS_DENIED"
     | "MISSING_APPROVAL"
-    | "MISSING_SANDBOX_EVIDENCE";
+    | "MISSING_SANDBOX_EVIDENCE"
+    | "ROLLBACK_TRIGGERED";
   timestamp_unix_ms: number;
 };
 
@@ -49,10 +55,35 @@ export class PromotionController {
   constructor(
     private readonly approvalGate: ApprovalGate,
     private readonly clock: { now: () => number } = { now: () => Date.now() },
+    private readonly rollbackPolicy: RollbackPolicy = defaultRollbackPolicy,
   ) {}
 
   currentStage(workflowId: string): PromotionStage {
     return this.stageByWorkflow.get(workflowId) ?? "sandbox";
+  }
+
+  evaluateRuntimeHealthAndRollback(input: {
+    workflow_id: string;
+    errorRate: number;
+    currentBreachDurationSeconds: number;
+  }): { rolledBack: boolean; stage: PromotionStage } {
+    const stage = this.currentStage(input.workflow_id);
+    if (stage !== "prod") {
+      return { rolledBack: false, stage };
+    }
+
+    const decision = evaluateRollbackPolicy({
+      errorRate: input.errorRate,
+      currentBreachDurationSeconds: input.currentBreachDurationSeconds,
+      policy: this.rollbackPolicy,
+    });
+    if (!decision.shouldRollback) {
+      return { rolledBack: false, stage };
+    }
+
+    this.stageByWorkflow.set(input.workflow_id, "staging");
+    this.audit(input.workflow_id, "prod", "staging", true, "ROLLBACK_TRIGGERED");
+    return { rolledBack: true, stage: "staging" };
   }
 
   listAuditTrail(workflowId: string): PromotionAuditEvent[] {

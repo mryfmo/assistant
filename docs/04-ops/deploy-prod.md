@@ -5,9 +5,9 @@
 
 # Steps
 
-1. Deploy canary workers.
+1. Promote `staging -> prod` only after required approval and runtime gates pass.
 2. Monitor SLO and error rates.
-3. Expand rollout in controlled phases.
+3. Trigger mandatory rollback when error rate exceeds 0.1% for 5 minutes.
 
 # Verification
 
