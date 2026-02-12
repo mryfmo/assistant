@@ -79,6 +79,7 @@ A milestone MUST NOT be marked complete when it is only `implemented-local` and 
 ### Phase 7 — mTLS + Remote (M11)
 
 - Production worker-control-plane communication uses mTLS (`ORCH-SEC-5001`).
+- Runtime readiness evidence for M11 requires transport-level gRPC mTLS. Bun compatibility fallback metadata is local-only and does not satisfy phase closure.
 - Remote topology validates with live remote workers (`ORCH-INT-4001` remote).
 - Runbooks and rollback procedures validated by operational drills.
 

@@ -33,6 +33,7 @@ Define deterministic certificate rotation steps for orchestrator and worker mTLS
 - `tests/runtime/mtls-enforcement.integration.test.ts` passes.
 - `tests/runtime/mtls-matrix.integration.test.ts` passes.
 - No unauthorized mTLS handshake failures in rollout window.
+- Runtime-readiness sign-off requires transport-level mTLS evidence; Bun metadata fallback evidence is insufficient for production sign-off.
 
 # Rollback
 

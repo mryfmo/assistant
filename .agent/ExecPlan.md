@@ -20,11 +20,11 @@ Implement a production-grade orchestration platform where non-technical users ca
 - [x] **Phase 1 bootstrap started**: test runner script added, runtime config loader added, closed-set error envelope mapping added, and gRPC-aligned TypeScript service skeletons/interceptors added.
 - [x] **Phase 1**: Contract service skeletons and runtime scaffolding (generated stubs + network-bound gRPC transport binding complete; M5 closed).
 - [x] **Phase 2**: Persistence layer and closed-set state machine.
-- [ ] **Phase 3**: Minimal vertical slice (happy-path orchestration; local in-memory path complete, real Postgres evidence pending).
-- [ ] **Phase 4**: Lease renewal, retries, timeouts, and runtime limits.
-- [ ] **Phase 5**: Plan Agent and Clarification Gate.
-- [ ] **Phase 6**: Skill Compiler, sandbox dry-run, and Promotion Controller.
-- [ ] **Phase 7**: mTLS enforcement and remote topology hardening.
+- [x] **Phase 3**: implemented-local (happy-path orchestration complete in local/in-memory runtime); validated-runtime evidence pending (real Postgres).
+- [x] **Phase 4**: implemented-local (renewal/retry/timeout/limits/chaos tests present in local runtime); phase-closed pending validated-runtime evidence.
+- [x] **Phase 5**: implemented-local (Plan Agent, clarification blocking/resume, cancel workflow implemented and tested locally); phase-closed pending validated-runtime evidence.
+- [x] **Phase 6**: implemented-local (skill manifest, dry-run evidence, promotion path/approval/rollback logic implemented and tested locally); phase-closed pending validated-runtime evidence.
+- [x] **Phase 7**: implemented-local (mTLS wiring and remote topology paths implemented and tested locally); phase-closed pending validated-runtime evidence.
 
 ## Milestones
 
@@ -36,11 +36,11 @@ Implement a production-grade orchestration platform where non-technical users ca
 | M4 | Remote topology pseudo-dispatch simulation complete | spec-pack | Done |
 | M5 | Services start, reject invalid/mismatched requests deterministically | runtime P1 | Done (in-process service host + network-bound gRPC transport) |
 | M6 | State transitions enforced by DB transactions; invalid edges impossible | runtime P2 | Done |
-| M7 | One-command local demo completes workflows end-to-end | runtime P3 | In Progress (local in-memory complete; real Postgres evidence pending) |
-| M8 | Chaos-concurrency test: no double-exec, no state corruption | runtime P4 | Pending |
-| M9 | Ambiguous intent blocks with well-formed question; resumes correctly | runtime P5 | Pending |
-| M10 | Skill cannot reach prod without sandbox evidence + explicit approval | runtime P6 | Pending |
-| M11 | staging/prod refuse non-mTLS; remote worker completes workflows | runtime P7 | Pending |
+| M7 | One-command local demo completes workflows end-to-end | runtime P3 | Implemented-local (real Postgres validated-runtime evidence pending) |
+| M8 | Chaos-concurrency test: no double-exec, no state corruption | runtime P4 | Implemented-local (validated-runtime evidence pending) |
+| M9 | Ambiguous intent blocks with well-formed question; resumes correctly | runtime P5 | Implemented-local (validated-runtime evidence pending) |
+| M10 | Skill cannot reach prod without sandbox evidence + explicit approval | runtime P6 | Implemented-local (validated-runtime evidence pending) |
+| M11 | staging/prod refuse non-mTLS; remote worker completes workflows | runtime P7 | Implemented-local (validated-runtime evidence pending) |
 
 ## Phase Details
 

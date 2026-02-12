@@ -28,7 +28,10 @@ Task execution, scheduling, retries, and queue behavior.
 
 # Load Shedding Rules
 
-- Reject new low-priority work when queue depth exceeds threshold.
+- Load shedding is evaluated at `SubmitPlan` intake before workflow creation.
+- Threshold formula is deterministic: `queued_task_count >= (max_active_workflows_per_tenant * 4)`.
+- In the current runtime, "low-priority work" means new `SubmitPlan` requests; these are denied with policy error while shedding is active.
+- The threshold derives from the centrally configured tenant active-workflow limit (`RuntimeConfig.maxActiveWorkflowsPerTenant`), so queue shedding remains configuration-linked.
 
 # Validation
 

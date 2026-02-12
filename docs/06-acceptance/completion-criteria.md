@@ -22,6 +22,7 @@ Key milestones:
 - **M8** (Phase 4): Chaos-concurrency test passes with no double-exec and no state corruption.
 - **M10** (Phase 6): Skill cannot reach prod without sandbox evidence + explicit approval.
 - **M11** (Phase 7): staging/prod refuse non-mTLS; remote workers complete workflows.
+- Runtime-readiness closure for M11 requires transport-level gRPC mTLS evidence. Bun metadata fallback is local-only evidence.
 
 See `.agent/CompletionCriteria.md` for the full phased runtime definition of done and `.agent/ExecPlan.md` for phase details, dependency graph, and risk register.
 
