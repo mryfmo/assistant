@@ -28,7 +28,7 @@ done
 ## Proto
 
 ```bash
-buf lint
+bun run check:g1-contracts
 ```
 
 # Failure Policy
