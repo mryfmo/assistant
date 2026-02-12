@@ -35,6 +35,7 @@ function createServerWithConfig(config: {
         leaseTtlSeconds: 30,
         maxRetry: 3,
         requireMtls: false,
+        allowMtlsMetadataFallback: true,
         artifactBackend: "local",
         maxActiveWorkflowsPerTenant: config.maxActiveWorkflowsPerTenant,
         maxTaskPayloadBytes: config.maxTaskPayloadBytes,

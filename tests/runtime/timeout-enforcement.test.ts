@@ -59,6 +59,7 @@ test("LeaseNextTask rejects timed-out plan/task using runtime config", async () 
       leaseTtlSeconds: 30,
       maxRetry: 3,
       requireMtls: false,
+      allowMtlsMetadataFallback: true,
       artifactBackend: "local",
       maxActiveWorkflowsPerTenant: 200,
       maxTaskPayloadBytes: 512 * 1024,
