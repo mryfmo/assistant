@@ -2,8 +2,10 @@
 
 1. sandbox validation
 2. staging validation
-3. production canary
-4. production full rollout
+3. production promotion
+
+Current runtime implementation models three promotion stages only: `sandbox -> staging -> prod`.
+Canary/full-rollout slicing is out of scope for the current requirement set.
 
 # Mandatory Gates
 

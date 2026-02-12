@@ -11,6 +11,22 @@ This checklist is execution-focused and keeps a one-row-to-one-requirement mappi
 - Do not mark an item complete until required tests pass and evidence is updated.
 - After each milestone, update `docs/06-acceptance/acceptance-matrix.md` with evidence links.
 
+## Runtime Status Snapshot (Canonical Alignment)
+
+Status levels are defined in `.agent/CompletionCriteria.md`.
+
+| Milestone | Current Status | Notes |
+|---|---|---|
+| M5 | `phase-closed` | Runtime service skeleton and network gRPC host are complete. |
+| M6 | `phase-closed` | Persistence/state machine/idempotency constraints are complete for current runtime profile. |
+| M7 | `implemented-local` | Local/in-memory vertical slice is complete; real Postgres validated-runtime evidence is still required. |
+| M8 | `implemented-local` | Lease/retry/timeout/limits/chaos implementation is complete locally; validated-runtime evidence is pending. |
+| M9 | `implemented-local` | Plan Agent + Clarification Gate implementation is complete locally; validated-runtime evidence is pending. |
+| M10 | `implemented-local` | Skill/promotion/approval/rollback implementation is complete locally; validated-runtime evidence is pending. |
+| M11 | `implemented-local` | mTLS and remote-topology implementation is complete locally; validated-runtime evidence is pending. |
+
+Row-level `[x]` markers in this checklist indicate `implemented-local` completion. Phase closure is governed by `.agent/Checklist.md` and `.agent/ExecPlan.md`.
+
 ## M6 - Persistence Layer and Closed-Set State Machine
 
 | Status | Milestone | Requirement ID | Work Item | Target Files (create/update) | Required Tests | Done When |
@@ -24,7 +40,7 @@ This checklist is execution-focused and keeps a one-row-to-one-requirement mappi
 
 ## M7 - Minimal Vertical Slice (Local)
 
-> Scope note: M7 rows in this checklist validate local vertical-slice behavior. Real Postgres evidence for full phase closure is tracked in `.agent/Checklist.md` and `.agent/ExecPlan.md`.
+> Scope note: M7 rows in this checklist validate local vertical-slice behavior. Real Postgres validated-runtime evidence for full phase closure is tracked in `.agent/Checklist.md` and `.agent/ExecPlan.md`.
 
 | Status | Milestone | Requirement ID | Work Item | Target Files (create/update) | Required Tests | Done When |
 |---|---|---|---|---|---|---|

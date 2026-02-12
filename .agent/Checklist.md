@@ -2,6 +2,22 @@
 
 Audit sync date: 2026-02-12
 
+## Runtime Milestone Status Snapshot (Canonical Alignment)
+
+Status levels follow `.agent/CompletionCriteria.md`: `implemented-local`, `validated-runtime`, `phase-closed`.
+
+| Milestone | Current Status | Note |
+|---|---|---|
+| M5 | phase-closed | Network-bound gRPC service host and deterministic request validation complete. |
+| M6 | phase-closed | Persistence/state machine/idempotency constraints complete for current runtime profile. |
+| M7 | implemented-local | Local/in-memory vertical slice complete; real Postgres evidence remains required for phase closure. |
+| M8 | implemented-local | Renewal/retry/timeout/limits/chaos coverage implemented locally; validated-runtime evidence pending. |
+| M9 | implemented-local | Plan Agent + Clarification Gate + CancelWorkflow implemented locally; validated-runtime evidence pending. |
+| M10 | implemented-local | Skill/promotion/approval/rollback controls implemented locally; validated-runtime evidence pending. |
+| M11 | implemented-local | mTLS and remote topology paths implemented locally; validated-runtime evidence pending. |
+
+Checklist boxes in Phase 3-7 track `phase-closed` status (not merely `implemented-local`).
+
 ## Verified in `spec-pack` (Complete)
 
 Checks at this level validate specification consistency, contract structure, document quality, and traceability. G5/G6 checks verify schema field presence and document content assertions — not live runtime behavior. See `docs/00-norms/validation-gates.md` for scope definitions.

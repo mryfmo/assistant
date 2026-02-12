@@ -21,3 +21,9 @@ When intent is ambiguous or risky, the system MUST ask clarifying questions befo
 
 - Blocking clarification prevents execution.
 - If no response is received, apply default only when policy allows and record audit note.
+
+## Default Application Policy
+
+- A default may be applied only when the caller explicitly provides a `defaultDecision`.
+- If `defaultDecision` is absent, execution remains blocked with `pending` status.
+- For high-risk intent, the operational default SHOULD be `cancel` unless an explicit override policy is recorded.

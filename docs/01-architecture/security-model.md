@@ -23,6 +23,11 @@ User UI, control plane, worker plane, external SaaS endpoints.
 
 Workers and control plane authenticate with short-lived certs.
 
+Transport policy:
+
+- `staging` and `prod` require transport-level gRPC mTLS for release readiness.
+- Bun compatibility fallback metadata (`x-mtls-authenticated`, `x-mtls-peer-id`) is local-only and cannot be used as production-readiness evidence.
+
 # Authorization (Scopes)
 
 Workers receive least-privilege capability tokens per task.
