@@ -6,6 +6,14 @@ import type { RuntimeConfig } from "../config";
 
 export type MtlsRequirement = "optional" | "required";
 
+function isBunRuntime(): boolean {
+  return typeof process.versions.bun === "string";
+}
+
+export function usesMetadataMtlsFallback(config: RuntimeConfig): boolean {
+  return config.requireMtls && isBunRuntime();
+}
+
 function readPemFile(path: string, fieldName: string): Buffer {
   try {
     return readFileSync(path);
@@ -35,11 +43,24 @@ export function createServerCredentials(config: RuntimeConfig): grpc.ServerCrede
   const serverCertPath = requirePath(config.tlsServerCertPath, "tlsServerCertPath");
   const serverKeyPath = requirePath(config.tlsServerKeyPath, "tlsServerKeyPath");
 
-  void readPemFile(caPath, "tlsCaCertPath");
-  void readPemFile(serverCertPath, "tlsServerCertPath");
-  void readPemFile(serverKeyPath, "tlsServerKeyPath");
+  const ca = readPemFile(caPath, "tlsCaCertPath");
+  const certChain = readPemFile(serverCertPath, "tlsServerCertPath");
+  const privateKey = readPemFile(serverKeyPath, "tlsServerKeyPath");
 
-  return grpc.ServerCredentials.createInsecure();
+  if (usesMetadataMtlsFallback(config)) {
+    return grpc.ServerCredentials.createInsecure();
+  }
+
+  return grpc.ServerCredentials.createSsl(
+    ca,
+    [
+      {
+        cert_chain: certChain,
+        private_key: privateKey,
+      },
+    ],
+    true,
+  );
 }
 
 export function createClientCredentials(config: RuntimeConfig): grpc.ChannelCredentials {
@@ -51,9 +72,13 @@ export function createClientCredentials(config: RuntimeConfig): grpc.ChannelCred
   const clientCertPath = requirePath(config.tlsClientCertPath, "tlsClientCertPath");
   const clientKeyPath = requirePath(config.tlsClientKeyPath, "tlsClientKeyPath");
 
-  void readPemFile(caPath, "tlsCaCertPath");
-  void readPemFile(clientCertPath, "tlsClientCertPath");
-  void readPemFile(clientKeyPath, "tlsClientKeyPath");
+  const ca = readPemFile(caPath, "tlsCaCertPath");
+  const certChain = readPemFile(clientCertPath, "tlsClientCertPath");
+  const privateKey = readPemFile(clientKeyPath, "tlsClientKeyPath");
 
-  return grpc.credentials.createInsecure();
+  if (usesMetadataMtlsFallback(config)) {
+    return grpc.credentials.createInsecure();
+  }
+
+  return grpc.credentials.createSsl(ca, privateKey, certChain);
 }

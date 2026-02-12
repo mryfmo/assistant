@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import { loadSync } from "@grpc/proto-loader";
 
-import { createErrorEnvelope } from "../../contracts/error-envelope";
 import { type RuntimeConfig, loadRuntimeConfig } from "../config";
 import type {
   ArtifactRef,
@@ -14,7 +13,7 @@ import type {
   TaskResult,
 } from "./orchestrator-v1";
 import { RuntimeGrpcServiceServer } from "./server";
-import { createServerCredentials } from "./tls-config";
+import { createServerCredentials, usesMetadataMtlsFallback } from "./tls-config";
 import type { GrpcTransportMetadata } from "./validation";
 
 type ServiceConstructors = {
@@ -275,12 +274,12 @@ export class RuntimeGrpcNetworkServer {
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
             ok: false,
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -297,12 +296,12 @@ export class RuntimeGrpcNetworkServer {
         const request = toLeaseRequest(call.request);
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -317,12 +316,12 @@ export class RuntimeGrpcNetworkServer {
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
             ok: false,
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -337,12 +336,12 @@ export class RuntimeGrpcNetworkServer {
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
             ok: false,
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -357,12 +356,12 @@ export class RuntimeGrpcNetworkServer {
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
             ok: false,
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -380,12 +379,12 @@ export class RuntimeGrpcNetworkServer {
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
             ok: false,
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -403,12 +402,12 @@ export class RuntimeGrpcNetworkServer {
         if (!this.isMtlsAccepted(call.metadata)) {
           callback(null, {
             ok: false,
-            error: createErrorEnvelope({
+            error: {
               code: "UNAUTHORIZED",
               message: "mTLS authentication is required for this environment.",
-              requestId: request.request_id,
+              request_id: request.request_id,
               retryable: false,
-            }),
+            },
           });
           return;
         }
@@ -464,6 +463,10 @@ export class RuntimeGrpcNetworkServer {
 
   private isMtlsAccepted(metadata: grpc.Metadata): boolean {
     if (!this.config.requireMtls) {
+      return true;
+    }
+
+    if (!usesMetadataMtlsFallback(this.config)) {
       return true;
     }
 
