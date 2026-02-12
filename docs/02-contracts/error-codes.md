@@ -7,6 +7,10 @@ All APIs return a typed envelope containing:
 - `retryable`
 - `request_id`
 
+# Requirements (Traceable)
+
+- ORCH-CORE-0004: Worker leasing and retry decisions MUST follow deterministic rules.
+
 # Error Codes (Closed Set)
 
 - `INVALID_REQUEST`

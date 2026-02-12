@@ -8,6 +8,7 @@ Define generated skill artifact lifecycle and runtime behavior.
 
 # Required Behaviors
 
+- ORCH-SKILL-3001: Skill compilation MUST require sandbox dry-run evidence before promotion-eligible execution.
 - Skills MUST include valid manifest and conforming `.opencode/skills/*/SKILL.md` metadata.
 - Skill loading MUST be blocked if permissions violate policy.
 
