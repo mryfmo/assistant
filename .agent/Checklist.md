@@ -1,6 +1,6 @@
 # Execution Checklist
 
-Audit sync date: 2026-02-12
+Audit sync date: 2026-02-13
 
 ## Runtime Milestone Status Snapshot (Canonical Alignment)
 
@@ -18,9 +18,13 @@ Status levels follow `.agent/CompletionCriteria.md`: `implemented-local`, `valid
 
 Checklist boxes in Phase 3-7 track `phase-closed` status (not merely `implemented-local`).
 
+- Runtime phase-closed audit memo (M5-M11): `checklists/runtime-implementation-phase-closed-audit-m5-m11.md`
+
 ## Verified in `spec-pack` (Complete)
 
 Checks at this level validate specification consistency, contract structure, document quality, and traceability. G5/G6 checks verify schema field presence and document content assertions — not live runtime behavior. See `docs/00-norms/validation-gates.md` for scope definitions.
+
+This section is considered `Ready` only when every checklist item below is green in the latest verification run.
 
 - [x] All requirement IDs are unique and mapped to acceptance artifacts and gate rows (`validateGateTraceability` in G0/G1/G5/G6/G7 checks).
 - [x] Contract inventory and local markdown links validate cleanly (`bun run check:g0-docs`).
