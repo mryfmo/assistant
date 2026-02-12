@@ -7,6 +7,11 @@
 Current runtime implementation models three promotion stages only: `sandbox -> staging -> prod`.
 Canary/full-rollout slicing is out of scope for the current requirement set.
 
+## Canary Scope
+
+- Canary rollout is out of scope while the current requirement set remains in the `spec-pack` profile.
+- Release checklists must treat canary items as conditional when canary rollout becomes active.
+
 # Mandatory Gates
 
 - For spec-pack releases in this repository, all gates in the `spec-pack` profile MUST pass.
