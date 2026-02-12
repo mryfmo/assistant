@@ -15,7 +15,7 @@ import type {
   TaskResult,
 } from "./orchestrator-v1";
 import type { RuntimeGrpcServiceServer } from "./server";
-import { createClientCredentials } from "./tls-config";
+import { createClientCredentials, usesMetadataMtlsFallback } from "./tls-config";
 import type { GrpcTransportMetadata } from "./validation";
 
 export class RuntimeGrpcServiceClient {
@@ -214,7 +214,7 @@ export class RuntimeGrpcNetworkClient {
     const channelCredentials = options.channelCredentials ?? createClientCredentials(config);
     const target = normalizeTargetAddress(options.address);
     this.mtlsPeerId =
-      config.requireMtls && config.tlsClientCertPath !== undefined
+      usesMetadataMtlsFallback(config) && config.tlsClientCertPath !== undefined
         ? basename(config.tlsClientCertPath)
         : undefined;
 
