@@ -3,6 +3,7 @@ export * from "./skills-v1";
 export * from "./services";
 export * from "./interceptors";
 export * from "./validation";
+export * from "./tls-config";
 export * from "./server";
 export * from "./client";
 export * from "./network-server";

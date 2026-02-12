@@ -2,7 +2,10 @@ import { createErrorEnvelope } from "../contracts/error-envelope";
 import type { LeaseRepository } from "../persistence/lease-repository";
 import type { TaskRepository } from "../persistence/task-repository";
 import { PersistenceError } from "../persistence/types";
+import type { WorkflowRepository } from "../persistence/workflow-repository";
+import type { RuntimeConfig } from "../runtime/config";
 import type { LeaseRequest, LeaseResponse } from "../runtime/grpc/orchestrator-v1";
+import { isTimeoutExceeded, timeoutErrorMessage } from "./timeout-enforcer";
 
 function taskStateToGrpc(
   state: string,
@@ -38,11 +41,16 @@ export async function leaseNextTask(
   repositories: {
     taskRepository: TaskRepository;
     leaseRepository: LeaseRepository;
+    workflowRepository: WorkflowRepository;
   },
   request: LeaseRequest,
   leaseTtlMs: number,
+  config: RuntimeConfig,
+  nowMs: number,
 ): Promise<LeaseResponse> {
   try {
+    await repositories.taskRepository.requeueDueRetries(nowMs);
+
     const claimed = await repositories.taskRepository.claimNextQueuedTask({
       worker_id: request.worker_id,
       lease_ttl_ms: leaseTtlMs,
@@ -50,6 +58,53 @@ export async function leaseNextTask(
 
     if (claimed === undefined) {
       return {};
+    }
+
+    const workflow = await repositories.workflowRepository.getWorkflow(claimed.task.workflow_id);
+    if (
+      workflow !== undefined &&
+      isTimeoutExceeded({
+        startedUnixMs: workflow.created_at,
+        nowUnixMs: nowMs,
+        timeoutSeconds: config.planStageTimeoutSeconds,
+      })
+    ) {
+      await repositories.taskRepository.transitionTaskState({
+        task_id: claimed.task.task_id,
+        expected_from_state: "leased",
+        to_state: "failed",
+      });
+      await repositories.workflowRepository.updateWorkflowState(claimed.task.workflow_id, "failed");
+
+      return {
+        error: createErrorEnvelope({
+          code: "TASK_TIMEOUT",
+          message: timeoutErrorMessage("plan", config.planStageTimeoutSeconds),
+          requestId: request.request_id,
+        }),
+      };
+    }
+
+    if (
+      isTimeoutExceeded({
+        startedUnixMs: claimed.task.created_at,
+        nowUnixMs: nowMs,
+        timeoutSeconds: config.taskExecutionTimeoutSeconds,
+      })
+    ) {
+      await repositories.taskRepository.transitionTaskState({
+        task_id: claimed.task.task_id,
+        expected_from_state: "leased",
+        to_state: "failed",
+      });
+
+      return {
+        error: createErrorEnvelope({
+          code: "TASK_TIMEOUT",
+          message: timeoutErrorMessage("task", config.taskExecutionTimeoutSeconds),
+          requestId: request.request_id,
+        }),
+      };
     }
 
     return {

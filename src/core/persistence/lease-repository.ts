@@ -13,6 +13,16 @@ export class LeaseRepository {
     return lease === undefined ? undefined : cloneLease(lease);
   }
 
+  async listLeases(): Promise<LeaseRecord[]> {
+    return [...this.db.readStore().leases.values()].map((lease) => cloneLease(lease));
+  }
+
+  async listExpiredLeases(referenceTimeMs: number): Promise<LeaseRecord[]> {
+    return [...this.db.readStore().leases.values()]
+      .filter((lease) => lease.expires_unix_ms <= referenceTimeMs)
+      .map((lease) => cloneLease(lease));
+  }
+
   async issueLease(input: {
     task_id: string;
     workflow_id: string;

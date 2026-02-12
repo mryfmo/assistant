@@ -15,6 +15,11 @@ test("loadRuntimeConfig uses documented defaults for sandbox", () => {
   assert.equal(config.maxTaskPayloadBytes, 512 * 1024);
   assert.equal(config.planStageTimeoutSeconds, 60);
   assert.equal(config.taskExecutionTimeoutSeconds, 300);
+  assert.equal(config.tlsCaCertPath, undefined);
+  assert.equal(config.tlsServerCertPath, undefined);
+  assert.equal(config.tlsServerKeyPath, undefined);
+  assert.equal(config.tlsClientCertPath, undefined);
+  assert.equal(config.tlsClientKeyPath, undefined);
 });
 
 test("loadRuntimeConfig applies explicit environment overrides", () => {
@@ -25,6 +30,11 @@ test("loadRuntimeConfig applies explicit environment overrides", () => {
     ORCH_MAX_RETRY: "5",
     ORCH_REQUIRE_MTLS: "true",
     ORCH_ARTIFACT_BACKEND: "s3",
+    ORCH_TLS_CA_CERT_PATH: "/tmp/ca.pem",
+    ORCH_TLS_SERVER_CERT_PATH: "/tmp/server-cert.pem",
+    ORCH_TLS_SERVER_KEY_PATH: "/tmp/server-key.pem",
+    ORCH_TLS_CLIENT_CERT_PATH: "/tmp/client-cert.pem",
+    ORCH_TLS_CLIENT_KEY_PATH: "/tmp/client-key.pem",
   });
 
   assert.equal(config.env, "prod");
@@ -33,11 +43,27 @@ test("loadRuntimeConfig applies explicit environment overrides", () => {
   assert.equal(config.maxRetry, 5);
   assert.equal(config.requireMtls, true);
   assert.equal(config.artifactBackend, "s3");
+  assert.equal(config.tlsCaCertPath, "/tmp/ca.pem");
+  assert.equal(config.tlsServerCertPath, "/tmp/server-cert.pem");
+  assert.equal(config.tlsServerKeyPath, "/tmp/server-key.pem");
+  assert.equal(config.tlsClientCertPath, "/tmp/client-cert.pem");
+  assert.equal(config.tlsClientKeyPath, "/tmp/client-key.pem");
 });
 
 test("loadRuntimeConfig rejects invalid environment values", () => {
   assert.throws(
     () => loadRuntimeConfig({ ORCH_ENV: "qa" }),
     new Error('Invalid ORCH_ENV: expected "sandbox", "staging", or "prod".'),
+  );
+});
+
+test("loadRuntimeConfig enforces mTLS in staging and prod", () => {
+  assert.throws(
+    () =>
+      loadRuntimeConfig({
+        ORCH_ENV: "staging",
+        ORCH_REQUIRE_MTLS: "false",
+      }),
+    new Error("Invalid ORCH_REQUIRE_MTLS: staging/prod require mTLS."),
   );
 });

@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import { loadSync } from "@grpc/proto-loader";
 
+import { createErrorEnvelope } from "../../contracts/error-envelope";
+import { type RuntimeConfig, loadRuntimeConfig } from "../config";
 import type {
   ArtifactRef,
   Lease,
@@ -12,6 +14,7 @@ import type {
   TaskResult,
 } from "./orchestrator-v1";
 import { RuntimeGrpcServiceServer } from "./server";
+import { createServerCredentials } from "./tls-config";
 import type { GrpcTransportMetadata } from "./validation";
 
 type ServiceConstructors = {
@@ -25,6 +28,7 @@ export type RuntimeGrpcNetworkServerOptions = {
   bindAddress: string;
   orchestratorProtoPath?: string;
   serviceServer?: RuntimeGrpcServiceServer;
+  config?: RuntimeConfig;
 };
 
 export type RuntimeGrpcServerHandle = {
@@ -107,6 +111,28 @@ function parseContractMajor(metadata: grpc.Metadata): GrpcTransportMetadata {
 
   const parsed = Number(raw.trim());
   return { contractMajor: parsed };
+}
+
+function parseMtlsMetadata(metadata: grpc.Metadata): { authenticated: boolean; peerId?: string } {
+  const authenticatedValue = metadata.get("x-mtls-authenticated")[0];
+  const peerValue = metadata.get("x-mtls-peer-id")[0];
+
+  const authenticated =
+    typeof authenticatedValue === "string"
+      ? authenticatedValue === "true"
+      : authenticatedValue?.toString("utf-8") === "true";
+
+  const peerId =
+    typeof peerValue === "string"
+      ? peerValue
+      : peerValue === undefined
+        ? undefined
+        : peerValue.toString("utf-8");
+
+  return {
+    authenticated,
+    peerId,
+  };
 }
 
 function toPlanRun(input: unknown): PlanRun {
@@ -225,6 +251,7 @@ export class RuntimeGrpcNetworkServer {
   private readonly serviceServer: RuntimeGrpcServiceServer;
   private readonly grpcServer: grpc.Server;
   private readonly orchestratorProtoPath: string;
+  private readonly config: RuntimeConfig;
   private boundPort?: number;
 
   constructor(options: RuntimeGrpcNetworkServerOptions) {
@@ -234,6 +261,7 @@ export class RuntimeGrpcNetworkServer {
     this.orchestratorProtoPath =
       options.orchestratorProtoPath ??
       resolve(process.cwd(), "contracts/proto/orchestrator/v1/orchestrator.proto");
+    this.config = options.config ?? loadRuntimeConfig({});
 
     this.registerServices();
   }
@@ -244,6 +272,19 @@ export class RuntimeGrpcNetworkServer {
     this.grpcServer.addService(constructors.planService.service, {
       SubmitPlan: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toPlanRun(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            ok: false,
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .submitPlan(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -254,6 +295,18 @@ export class RuntimeGrpcNetworkServer {
     this.grpcServer.addService(constructors.workerService.service, {
       LeaseNextTask: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toLeaseRequest(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .leaseNextTask(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -261,6 +314,19 @@ export class RuntimeGrpcNetworkServer {
       },
       RenewLease: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toLease(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            ok: false,
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .renewLease(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -268,6 +334,19 @@ export class RuntimeGrpcNetworkServer {
       },
       ReportEvent: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toTaskEvent(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            ok: false,
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .reportEvent(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -275,6 +354,19 @@ export class RuntimeGrpcNetworkServer {
       },
       ReportResult: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toTaskResult(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            ok: false,
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .reportResult(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -285,6 +377,19 @@ export class RuntimeGrpcNetworkServer {
     this.grpcServer.addService(constructors.artifactService.service, {
       RegisterArtifact: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toArtifactRef(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            ok: false,
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .registerArtifact(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -295,6 +400,19 @@ export class RuntimeGrpcNetworkServer {
     this.grpcServer.addService(constructors.adminService.service, {
       CancelWorkflow: (call: UnaryCall, callback: UnaryCallback) => {
         const request = toPlanRun(call.request);
+        if (!this.isMtlsAccepted(call.metadata)) {
+          callback(null, {
+            ok: false,
+            error: createErrorEnvelope({
+              code: "UNAUTHORIZED",
+              message: "mTLS authentication is required for this environment.",
+              requestId: request.request_id,
+              retryable: false,
+            }),
+          });
+          return;
+        }
+
         void this.serviceServer
           .cancelWorkflow(request, parseContractMajor(call.metadata))
           .then((response) => callback(null, response))
@@ -307,18 +425,15 @@ export class RuntimeGrpcNetworkServer {
     await this.serviceServer.start();
 
     const boundPort = await new Promise<number>((resolveBind, rejectBind) => {
-      this.grpcServer.bindAsync(
-        this.bindAddress,
-        grpc.ServerCredentials.createInsecure(),
-        (error, port) => {
-          if (error !== null) {
-            rejectBind(error);
-            return;
-          }
+      const serverCredentials = createServerCredentials(this.config);
+      this.grpcServer.bindAsync(this.bindAddress, serverCredentials, (error, port) => {
+        if (error !== null) {
+          rejectBind(error);
+          return;
+        }
 
-          resolveBind(port);
-        },
-      );
+        resolveBind(port);
+      });
     });
 
     this.boundPort = boundPort;
@@ -345,5 +460,14 @@ export class RuntimeGrpcNetworkServer {
 
   getBoundPort(): number | undefined {
     return this.boundPort;
+  }
+
+  private isMtlsAccepted(metadata: grpc.Metadata): boolean {
+    if (!this.config.requireMtls) {
+      return true;
+    }
+
+    const mtls = parseMtlsMetadata(metadata);
+    return mtls.authenticated && (mtls.peerId?.trim().length ?? 0) > 0;
   }
 }

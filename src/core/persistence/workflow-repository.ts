@@ -53,4 +53,10 @@ export class WorkflowRepository {
       return { ...workflow };
     });
   }
+
+  async countActiveWorkflowsByTenant(tenantId: string): Promise<number> {
+    return [...this.db.readStore().workflows.values()].filter(
+      (workflow) => workflow.tenant_id === tenantId && workflow.state === "active",
+    ).length;
+  }
 }

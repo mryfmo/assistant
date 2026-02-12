@@ -2,7 +2,9 @@ import { createErrorEnvelope } from "../contracts/error-envelope";
 import type { TaskRepository } from "../persistence/task-repository";
 import { PersistenceError } from "../persistence/types";
 import type { WorkflowRepository } from "../persistence/workflow-repository";
+import type { RuntimeConfig } from "../runtime/config";
 import type { Ack, TaskResult } from "../runtime/grpc/orchestrator-v1";
+import { evaluateRetryDecision, retryBackoffMs } from "./retry-policy";
 
 function reportResultFailure(requestId: string, message: string): Ack {
   return {
@@ -22,6 +24,7 @@ export async function reportResult(
     workflowRepository: WorkflowRepository;
   },
   request: TaskResult,
+  config: RuntimeConfig,
 ): Promise<Ack> {
   try {
     const existing = await repositories.taskRepository.getTask(request.task_id);
@@ -29,15 +32,25 @@ export async function reportResult(
       await repositories.taskRepository.markTaskRunning(request.task_id);
     }
 
+    const retryDecision = evaluateRetryDecision({
+      success: request.success,
+      errorCode: request.error?.code,
+      retryCount: existing?.retry_count ?? 0,
+      maxRetry: config.maxRetry,
+    });
+
     const updatedTask = await repositories.taskRepository.completeTaskFromResult({
       task_id: request.task_id,
       workflow_id: request.workflow_id,
       success: request.success,
-      retryable: request.error?.retryable ?? false,
+      retryable: retryDecision.shouldRetry,
     });
 
     if (updatedTask.state === "retry_wait") {
-      await repositories.taskRepository.enqueueRetry(updatedTask.task_id);
+      await repositories.taskRepository.scheduleRetry(
+        updatedTask.task_id,
+        retryBackoffMs(updatedTask.retry_count),
+      );
       return { ok: true };
     }
 
