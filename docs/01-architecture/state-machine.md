@@ -12,7 +12,7 @@ Workflow lifecycle and task lifecycle transitions.
 
 # Requirements (Traceable)
 
-- ORCH-CORE-0020: Illegal state transitions MUST be rejected.
+- ORCH-CORE-0003: Illegal state transitions MUST be rejected.
 
 # Task States (Closed Set)
 

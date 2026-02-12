@@ -1,12 +1,12 @@
 # Gate List
 
-- G0 Docs: markdown lint/link/inventory consistency.
-- G1 Contracts: proto/jsonschema lint and compatibility checks.
+- G0 Docs: executable docs validation MUST run `bun run check:g0-docs`.
+- G1 Contracts: executable contract validation MUST run `bun run check:g1-contracts`.
 - G2 TypeScript: `bun run lint:biome` + `bun run typecheck:ts`.
 - G3 Python (optional): run only when Python components are present.
 - G4 Rust (optional): run only when Rust components are present.
 - G5 Integration: executable integration validation MUST run `bun run check:g5-integration`.
-- G6 E2E: executable E2E validation MUST run `bun run check:g6-e2e`.
+- G6 E2E: executable E2E validation MUST run `bun run check:g6-e2e` and `bun run check:g6-topology`.
 - G7 Security: executable security validation MUST run `bun run check:g7-security`.
 
 # Gate Profiles

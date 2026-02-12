@@ -1,4 +1,18 @@
 requirements:
+  - id: ORCH-DX-7001
+    statement: "Documentation set MUST pass executable lint, link, and inventory consistency checks."
+    rationale: "Prevents policy drift and broken normative references."
+    contracts: ["docs/BLUEPRINT.md", "docs/02-contracts/contract-index.md"]
+    gate: ["G0"]
+    verification: ["tests/verification/docs-g0-validation.md"]
+    owner_doc: "docs/00-norms/validation-gates.md"
+  - id: ORCH-API-1001
+    statement: "Contracts MUST pass executable protobuf and JSON schema compatibility validation."
+    rationale: "Prevents silent interface breakage across agents and integrations."
+    contracts: ["contracts/proto/orchestrator/v1/orchestrator.proto", "contracts/jsonschema/openwork-plan.v1.json", "contracts/openapi/openapi.yaml"]
+    gate: ["G1"]
+    verification: ["tests/verification/contracts-g1-validation.md"]
+    owner_doc: "docs/02-contracts/contract-index.md"
   - id: ORCH-CORE-0001
     statement: "Every workflow MUST include immutable workflow_id across all events and artifacts."
     rationale: "Ensures traceability and auditability."
@@ -6,6 +20,13 @@ requirements:
     gate: ["G5", "G6"]
     verification: ["tests/verification/workflow-correlation-e2e.md"]
     owner_doc: "docs/01-architecture/overview.md"
+  - id: ORCH-CORE-0010
+    statement: "All core components MUST communicate through versioned contracts."
+    rationale: "Prevents cross-component drift and ambiguous interface behavior."
+    contracts: ["docs/01-architecture/components.md", "docs/02-contracts/contract-index.md"]
+    gate: ["G5"]
+    verification: ["tests/verification/component-contract-versioning-validation.md"]
+    owner_doc: "docs/01-architecture/components.md"
   - id: ORCH-CORE-0002
     statement: "Plan Agent MUST NOT perform side-effecting execution."
     rationale: "Separates planning from execution risk."
@@ -55,3 +76,52 @@ requirements:
     gate: ["G7"]
     verification: ["tests/verification/logging-trace-context-validation.md"]
     owner_doc: "docs/01-architecture/observability.md"
+  - id: ORCH-CORE-0003
+    statement: "Orchestrator state transitions MUST follow a closed-set state machine and reject illegal transitions."
+    rationale: "Protects workflow determinism and prevents invalid lifecycle transitions."
+    contracts: ["docs/01-architecture/state-machine.md", "contracts/proto/orchestrator/v1/orchestrator.proto"]
+    gate: ["G6"]
+    verification: ["tests/verification/orchestrator-state-machine-validation.md"]
+    owner_doc: "docs/01-architecture/state-machine.md"
+  - id: ORCH-CORE-0004
+    statement: "Worker leasing and retry decisions MUST follow deterministic lease and retryability rules."
+    rationale: "Prevents duplicate execution and inconsistent retry outcomes."
+    contracts: ["contracts/proto/orchestrator/v1/orchestrator.proto", "docs/02-contracts/error-codes.md"]
+    gate: ["G6"]
+    verification: ["tests/verification/worker-lease-retry-validation.md"]
+    owner_doc: "docs/02-contracts/error-codes.md"
+  - id: ORCH-SKILL-3001
+    statement: "Skill compilation MUST require sandbox dry-run evidence before promotion-eligible execution."
+    rationale: "Reduces unsafe skill rollout and validates capability constraints before promotion."
+    contracts: ["contracts/jsonschema/skill-manifest.v1.json", "docs/03-integrations/skills.md", "docs/04-ops/promotion-policy.md"]
+    gate: ["G6"]
+    verification: ["tests/verification/skill-sandbox-dryrun-validation.md"]
+    owner_doc: "docs/03-integrations/skills.md"
+  - id: ORCH-OPS-6004
+    statement: "Approval and promotion control MUST enforce explicit approval and forbid bypass paths."
+    rationale: "Prevents unauthorized progression from planning/sandbox stages to production-impacting execution."
+    contracts: ["docs/04-ops/promotion-policy.md", "contracts/openapi/openapi.yaml"]
+    gate: ["G6"]
+    verification: ["tests/verification/approval-promotion-control-validation.md"]
+    owner_doc: "docs/04-ops/promotion-policy.md"
+  - id: ORCH-INT-4001
+    statement: "Plan Agent x1 and Task Execution Agents xN MUST validate under both local and remote topology simulation."
+    rationale: "Ensures orchestration semantics remain valid across deployment topologies."
+    contracts: ["contracts/jsonschema/openwork-plan.v1.json", "contracts/proto/orchestrator/v1/orchestrator.proto"]
+    gate: ["G6"]
+    verification: ["tests/verification/local-remote-topology-simulation-validation.md"]
+    owner_doc: "docs/06-acceptance/completion-criteria.md"
+  - id: ORCH-DATA-2001
+    statement: "Task state transitions MUST be atomic under transactional data constraints."
+    rationale: "Prevents duplicate side effects and inconsistent task lifecycle records."
+    contracts: ["docs/01-architecture/data-model.md", "docs/01-architecture/state-machine.md"]
+    gate: ["G6"]
+    verification: ["tests/verification/data-model-atomic-transition-validation.md"]
+    owner_doc: "docs/01-architecture/data-model.md"
+  - id: ORCH-OPS-6010
+    statement: "Runtime limits MUST be centrally configurable and numerically defined with units."
+    rationale: "Ensures predictable capacity control and environment-specific tuning."
+    contracts: ["docs/01-architecture/performance-limits.md"]
+    gate: ["G6"]
+    verification: ["tests/verification/runtime-limits-configuration-validation.md"]
+    owner_doc: "docs/01-architecture/performance-limits.md"

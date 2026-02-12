@@ -49,6 +49,19 @@ function main(): void {
     "request_id",
   ]);
 
+  const componentsDoc = readFileSync(
+    resolve(repoRoot, "docs/01-architecture/components.md"),
+    "utf-8",
+  );
+  assertCondition(
+    componentsDoc.includes("ORCH-CORE-0010"),
+    "components doc must reference ORCH-CORE-0010",
+  );
+  assertCondition(
+    componentsDoc.includes("versioned contracts"),
+    "components doc must require versioned contract boundaries",
+  );
+
   process.stdout.write(
     `G5 integration validation passed for: ${result.validatedRequirementIds.join(", ")}\n`,
   );

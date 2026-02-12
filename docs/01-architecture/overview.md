@@ -16,6 +16,7 @@ Includes local and remote worker orchestration, skill compilation, sandbox valid
 
 - ORCH-CORE-0001: Workflow MUST carry immutable `workflow_id`.
 - ORCH-CORE-0002: Plan Agent MUST NOT execute side effects.
+- ORCH-INT-4001: Plan Agent x1 and Task Execution Agents xN MUST validate in local and remote topology.
 
 # Interfaces / Contracts
 
