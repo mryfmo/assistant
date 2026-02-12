@@ -20,10 +20,13 @@ Control plane and workers authenticate mutually using mTLS.
 - `approval.request`
 - `approval.consume`
 
-Current runtime enforcement coverage:
+Current runtime-enforced scopes (M5-M11):
 
 - Worker RPC authorization paths enforce `task.dispatch` and `task.execute`.
-- Remaining scopes are reserved for corresponding runtime endpoints as they are introduced.
+
+Planned/future enforcement scope (not yet active):
+
+- `plan.read`, `plan.write`, `artifact.write`, `artifact.read`, `approval.request`, `approval.consume` are reserved in the closed set for future runtime endpoints and are not yet enforced by current implementations.
 
 # Certificate Requirements
 
