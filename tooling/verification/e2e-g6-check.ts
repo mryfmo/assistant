@@ -73,6 +73,75 @@ function main(): void {
     "promotion policy must explicitly forbid direct sandbox->prod promotion",
   );
 
+  const stateMachineDoc = readFileSync(
+    resolve(repoRoot, "docs/01-architecture/state-machine.md"),
+    "utf-8",
+  );
+  assertCondition(
+    stateMachineDoc.includes("ORCH-CORE-0003"),
+    "state-machine doc must reference ORCH-CORE-0003",
+  );
+  assertCondition(
+    stateMachineDoc.includes("queued -> leased") &&
+      stateMachineDoc.includes("retry_wait -> queued"),
+    "state-machine doc must define required transition edges",
+  );
+
+  const errorCodesDoc = readFileSync(
+    resolve(repoRoot, "docs/02-contracts/error-codes.md"),
+    "utf-8",
+  );
+  assertCondition(
+    errorCodesDoc.includes("ORCH-CORE-0004"),
+    "error-codes doc must reference ORCH-CORE-0004",
+  );
+  assertCondition(
+    errorCodesDoc.includes("LEASE_CONFLICT") && errorCodesDoc.includes("Retryability Rules"),
+    "error-codes doc must define lease/retry policy details",
+  );
+
+  const skillsDoc = readFileSync(resolve(repoRoot, "docs/03-integrations/skills.md"), "utf-8");
+  assertCondition(
+    skillsDoc.includes("ORCH-SKILL-3001"),
+    "skills doc must reference ORCH-SKILL-3001",
+  );
+  assertCondition(
+    skillsDoc.includes("sandbox") || promotionPolicy.includes("sandbox validation"),
+    "skill compilation flow must include sandbox dry-run expectation",
+  );
+
+  assertCondition(
+    promotionPolicy.includes("ORCH-OPS-6004"),
+    "promotion policy must reference ORCH-OPS-6004",
+  );
+
+  const dataModelDoc = readFileSync(
+    resolve(repoRoot, "docs/01-architecture/data-model.md"),
+    "utf-8",
+  );
+  assertCondition(
+    dataModelDoc.includes("ORCH-DATA-2001"),
+    "data-model doc must reference ORCH-DATA-2001",
+  );
+  assertCondition(
+    dataModelDoc.includes("atomic"),
+    "data-model doc must define atomic transition expectations",
+  );
+
+  const performanceLimitsDoc = readFileSync(
+    resolve(repoRoot, "docs/01-architecture/performance-limits.md"),
+    "utf-8",
+  );
+  assertCondition(
+    performanceLimitsDoc.includes("ORCH-OPS-6010"),
+    "performance-limits doc must reference ORCH-OPS-6010",
+  );
+  assertCondition(
+    /Max retries per task:\s*\d+/.test(performanceLimitsDoc) &&
+      /timeout:\s*\d+s/i.test(performanceLimitsDoc),
+    "performance-limits doc must include numeric limits and timeout units",
+  );
+
   process.stdout.write(
     `G6 e2e validation passed for: ${result.validatedRequirementIds.join(", ")}\n`,
   );
