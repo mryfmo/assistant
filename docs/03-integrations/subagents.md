@@ -18,4 +18,4 @@ Timeout, malformed output, policy violation.
 
 # Validation (Tests + Gates)
 
-Validated by G1 contract tests and G6 E2E scenarios.
+Validated by G1 contract checks and G6 spec-consistency checks. Under `runtime-implementation`, additionally validated by live E2E scenarios.

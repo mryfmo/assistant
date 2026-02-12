@@ -25,6 +25,10 @@ If any document conflicts with these files, these files win.
 
 Run the `spec-pack` gate profile defined in `docs/00-norms/validation-gates.md`.
 
+# Completion Criteria
+
+The canonical definition of done is `.agent/CompletionCriteria.md`. The acceptance-facing summary is `docs/06-acceptance/completion-criteria.md`.
+
 # Change Control Rules
 
 - Every requirement change MUST include:

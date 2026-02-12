@@ -4,6 +4,8 @@
 - [ ] Validation gates G0-G7 pass.
 - [ ] `bun run check:g0-docs` passes.
 - [ ] `bun run check:g1-contracts` passes.
+- [ ] `bun run lint:biome` passes.
+- [ ] `bun run typecheck:ts` passes.
 - [ ] `bun run check:g5-integration` passes.
 - [ ] `bun run check:g6-e2e` passes.
 - [ ] `bun run check:g6-topology` passes.

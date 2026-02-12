@@ -1,5 +1,14 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { extname, resolve } from "node:path";
 
 import { validateGateTraceability } from "./lib/acceptance-trace";
@@ -8,6 +17,109 @@ function assertCondition(condition: boolean, message: string): asserts condition
   if (!condition) {
     throw new Error(message);
   }
+}
+
+const BUF_CLI_PACKAGE = "@bufbuild/buf@1.58.0";
+
+function runPinnedBufCli(repoRoot: string, args: string[], description: string): void {
+  const result = spawnSync("bunx", [BUF_CLI_PACKAGE, ...args], {
+    cwd: repoRoot,
+    stdio: "inherit",
+  });
+
+  assertCondition(
+    result.status === 0,
+    `${description} failed with status ${result.status ?? "unknown"}`,
+  );
+}
+
+function readGitStdout(repoRoot: string, args: string[]): string | undefined {
+  const result = spawnSync("git", args, {
+    cwd: repoRoot,
+    stdio: ["ignore", "pipe", "pipe"],
+    encoding: "utf-8",
+  });
+
+  if (result.status !== 0) {
+    return undefined;
+  }
+
+  const stdout = result.stdout.trim();
+  return stdout.length > 0 ? stdout : undefined;
+}
+
+function resolvePreChangeBaselineRef(repoRoot: string): string {
+  const headSha = readGitStdout(repoRoot, ["rev-parse", "HEAD"]);
+  assertCondition(headSha !== undefined, "Unable to resolve HEAD for buf breaking baseline.");
+
+  let originMainSha = readGitStdout(repoRoot, ["rev-parse", "--verify", "origin/main"]);
+  if (originMainSha === undefined) {
+    const fetchResult = spawnSync("git", ["fetch", "origin", "main", "--depth", "1"], {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+    assertCondition(
+      fetchResult.status === 0,
+      `Unable to fetch origin/main for buf breaking baseline (status ${fetchResult.status ?? "unknown"})`,
+    );
+    originMainSha = readGitStdout(repoRoot, ["rev-parse", "--verify", "origin/main"]);
+  }
+
+  const mergeBaseSha = readGitStdout(repoRoot, ["merge-base", "HEAD", "origin/main"]);
+  if (mergeBaseSha !== undefined && mergeBaseSha !== headSha) {
+    return mergeBaseSha;
+  }
+
+  const previousHeadSha = readGitStdout(repoRoot, ["rev-parse", "--verify", "HEAD~1"]);
+  if (previousHeadSha !== undefined) {
+    return previousHeadSha;
+  }
+
+  if (originMainSha !== undefined && originMainSha !== headSha) {
+    return originMainSha;
+  }
+
+  throw new Error("Unable to resolve pre-change baseline for buf breaking check.");
+}
+
+function exportBaselineProtoTree(
+  repoRoot: string,
+  baselineRef: string,
+): { tempRoot: string; baselinePath: string } {
+  const tempRoot = mkdtempSync(resolve(tmpdir(), "buf-breaking-"));
+  const baselineRoot = resolve(tempRoot, "baseline");
+  mkdirSync(baselineRoot, { recursive: true });
+
+  const archiveResult = spawnSync(
+    "git",
+    ["archive", "--format=tar", baselineRef, "contracts/proto"],
+    {
+      cwd: repoRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  assertCondition(
+    archiveResult.status === 0,
+    `Unable to export baseline proto tree from ${baselineRef} (status ${archiveResult.status ?? "unknown"})`,
+  );
+
+  const extractResult = spawnSync("tar", ["-xf", "-", "-C", baselineRoot], {
+    cwd: repoRoot,
+    stdio: ["pipe", "inherit", "inherit"],
+    input: archiveResult.stdout,
+  });
+  assertCondition(
+    extractResult.status === 0,
+    `Unable to extract baseline proto archive (status ${extractResult.status ?? "unknown"})`,
+  );
+
+  const baselinePath = resolve(baselineRoot, "contracts/proto");
+  assertCondition(
+    existsSync(baselinePath),
+    `Extracted baseline proto path missing: ${baselinePath}`,
+  );
+
+  return { tempRoot, baselinePath };
 }
 
 function collectFiles(path: string, extension: string): string[] {
@@ -148,57 +260,31 @@ function checkProtoCompatibilityTooling(repoRoot: string): void {
   assertCondition(content.includes("lint:"), "Buf config must define lint section");
   assertCondition(content.includes("breaking:"), "Buf config must define breaking section");
 
-  const lintResult = spawnSync(
-    "bunx",
-    ["@bufbuild/buf", "lint", "contracts/proto", "--config", "tooling/proto/buf.yaml"],
-    {
-      cwd: repoRoot,
-      stdio: "inherit",
-    },
+  runPinnedBufCli(
+    repoRoot,
+    ["lint", "contracts/proto", "--config", "tooling/proto/buf.yaml"],
+    "buf lint",
   );
 
-  assertCondition(
-    lintResult.status === 0,
-    `buf lint failed with status ${lintResult.status ?? "unknown"}`,
-  );
+  const baselineRef = resolvePreChangeBaselineRef(repoRoot);
+  const { tempRoot, baselinePath } = exportBaselineProtoTree(repoRoot, baselineRef);
 
-  const hasOriginMain = spawnSync("git", ["rev-parse", "--verify", "origin/main"], {
-    cwd: repoRoot,
-    stdio: "ignore",
-  });
-
-  if (hasOriginMain.status !== 0) {
-    const fetchResult = spawnSync("git", ["fetch", "origin", "main", "--depth", "1"], {
-      cwd: repoRoot,
-      stdio: "inherit",
-    });
-    assertCondition(
-      fetchResult.status === 0,
-      `Unable to fetch origin/main for buf breaking baseline (status ${fetchResult.status ?? "unknown"})`,
+  try {
+    runPinnedBufCli(
+      repoRoot,
+      [
+        "breaking",
+        "contracts/proto",
+        "--config",
+        "tooling/proto/buf.yaml",
+        "--against",
+        baselinePath,
+      ],
+      "buf breaking",
     );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
   }
-
-  const breakingResult = spawnSync(
-    "bunx",
-    [
-      "@bufbuild/buf",
-      "breaking",
-      "contracts/proto",
-      "--config",
-      "tooling/proto/buf.yaml",
-      "--against",
-      ".git#branch=origin/main,subdir=contracts/proto",
-    ],
-    {
-      cwd: repoRoot,
-      stdio: "inherit",
-    },
-  );
-
-  assertCondition(
-    breakingResult.status === 0,
-    `buf breaking failed with status ${breakingResult.status ?? "unknown"}`,
-  );
 }
 
 function main(): void {

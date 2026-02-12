@@ -52,9 +52,9 @@ jobs:
             cargo clippy --manifest-path "${manifest}" --all-targets --all-features -- -D warnings
             cargo check --manifest-path "${manifest}" --all-targets --all-features
           done
-      - name: G5 integration artifacts
+      - name: G5 spec consistency (contract fields)
         run: bun run check:g5-integration
-      - name: G6 e2e artifacts
+      - name: G6 spec consistency (requirements + topology)
         run: bun run check:g6-e2e && bun run check:g6-topology
-      - name: G7 security artifacts
+      - name: G7 security and logging
         run: bun run check:g7-security

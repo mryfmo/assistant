@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { validateGateTraceability } from "./lib/acceptance-trace";
@@ -10,9 +10,30 @@ function assertCondition(condition: boolean, message: string): asserts condition
   }
 }
 
+function checkRequiredArtifacts(repoRoot: string): void {
+  const requiredArtifacts = [
+    "docs/01-architecture/security-model.md",
+    "docs/02-contracts/authn-authz.md",
+    "tests/verification/mtls-enforcement-test.md",
+    "tests/verification/logging-correlation-validation.md",
+    "tests/verification/logging-redaction-validation.md",
+    "tests/verification/logging-trace-context-validation.md",
+    "SECURITY.md",
+  ];
+
+  for (const requiredArtifact of requiredArtifacts) {
+    assertCondition(
+      existsSync(resolve(repoRoot, requiredArtifact)),
+      `Missing required security artifact: ${requiredArtifact}`,
+    );
+  }
+}
+
 function main(): void {
   const repoRoot = resolve(__dirname, "../..");
   const result = validateGateTraceability(repoRoot, "G7");
+
+  checkRequiredArtifacts(repoRoot);
 
   const securityModel = readFileSync(
     resolve(repoRoot, "docs/01-architecture/security-model.md"),

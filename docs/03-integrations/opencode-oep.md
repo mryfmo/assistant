@@ -17,4 +17,4 @@ Transport interruption, schema mismatch.
 
 # Validation (Tests + Gates)
 
-Contract tests in G1 and integration tests in G5.
+Contract tests in G1 and G5 spec-consistency checks under the `spec-pack` profile. Under `runtime-implementation`, G5 additionally validates live cross-component integration behavior.

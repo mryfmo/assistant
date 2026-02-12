@@ -4,7 +4,7 @@ This repository defines implementation contracts for:
 
 - Plan Agent (single coordinator)
 - Task Execution Agent (horizontal workers)
-- Skill Compiler Agent
+- Skill Compiler
 - Validation Agent
 
 All behavior MUST follow requirement IDs in `docs/06-acceptance/requirements.yaml`.
@@ -12,7 +12,7 @@ All behavior MUST follow requirement IDs in `docs/06-acceptance/requirements.yam
 # Tooling Boundaries and Allowed Side Effects
 
 - Plan Agent: no external side effects; planning and decomposition only.
-- Execution Agents: side effects allowed only within approved capabilities and environment policy.
+- Task Execution Agents: side effects allowed only within approved capabilities and environment policy.
 - Chrome/Playwright tasks: sandbox-first, explicit promotion required.
 
 # Plan Agent Responsibilities

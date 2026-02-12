@@ -18,4 +18,4 @@ Invalid manifest, missing capability scope.
 
 # Validation (Tests + Gates)
 
-Contract validation in G1 and runtime checks in G5.
+Contract validation in G1 and G5 spec-consistency checks under the `spec-pack` profile. Under `runtime-implementation`, G5 additionally validates live cross-component integration behavior.

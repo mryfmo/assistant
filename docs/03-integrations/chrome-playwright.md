@@ -19,4 +19,4 @@ Selector drift, auth expiration, blocked navigation.
 
 # Validation (Tests + Gates)
 
-G6 includes browser automation acceptance flow.
+G6 includes browser-automation spec-consistency assertions under the `spec-pack` profile. Under `runtime-implementation`, G6 additionally validates live browser automation end-to-end flow.

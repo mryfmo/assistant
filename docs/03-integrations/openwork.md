@@ -19,4 +19,4 @@ Session disconnect, stale UI state, approval timeout.
 
 # Validation (Tests + Gates)
 
-Covered in G6 E2E workflow tests.
+Covered in G6 spec-consistency checks. Under `runtime-implementation`, additionally validated by live E2E workflow tests.

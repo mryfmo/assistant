@@ -1,4 +1,9 @@
 version: v1
 managed:
   enabled: true
-plugins: []
+plugins:
+  - plugin: buf.build/bufbuild/es
+    out: src/generated/proto
+    opt:
+      - target=ts
+      - import_extension=none

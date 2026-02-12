@@ -18,4 +18,4 @@ Profile mismatch, unsupported capability mapping.
 
 # Validation (Tests + Gates)
 
-Compatibility tests in G5 and G6.
+Compatibility checks in G5 and G6 under the `spec-pack` profile (spec-consistency depth). Under `runtime-implementation`, G5 and G6 additionally validate live integration and end-to-end behavior.

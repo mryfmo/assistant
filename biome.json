@@ -2,6 +2,6 @@
   "$schema": "https://biomejs.dev/schemas/1.8.0/schema.json",
   "extends": ["./tooling/typescript/biome.json"],
   "files": {
-    "ignore": ["playbooks/**", "target/**", "node_modules/**"]
+    "ignore": ["playbooks/**", "target/**", "node_modules/**", "src/generated/**"]
   }
 }
