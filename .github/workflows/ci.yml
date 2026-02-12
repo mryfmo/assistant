@@ -27,20 +27,9 @@ jobs:
           echo "has_python=${has_python}" >> "$GITHUB_OUTPUT"
           echo "has_rust=${has_rust}" >> "$GITHUB_OUTPUT"
       - name: G0 docs
-        run: test -f README.md && test -f docs/BLUEPRINT.md
+        run: bun run check:g0-docs
       - name: G1 contracts
-        run: |
-          test -f contracts/proto/orchestrator/v1/orchestrator.proto
-          test -f contracts/proto/skills/v1/skills.proto
-          test -f contracts/jsonschema/openwork-plan.v1.json
-          test -f contracts/jsonschema/task-spec.v1.json
-          test -f contracts/jsonschema/task-result.v1.json
-          test -f contracts/jsonschema/log-event.v1.json
-          test -f contracts/jsonschema/skill-manifest.v1.json
-          test -f contracts/jsonschema/oep-message.v1.json
-          test -f contracts/jsonschema/subagent-request.v1.json
-          test -f contracts/jsonschema/subagent-result.v1.json
-          test -f contracts/openapi/openapi.yaml
+        run: bun run check:g1-contracts
       - name: G2 TypeScript
         run: bun run lint:biome && bun run typecheck:ts
       - if: steps.detect_optional.outputs.has_python == 'true'
@@ -66,6 +55,6 @@ jobs:
       - name: G5 integration artifacts
         run: bun run check:g5-integration
       - name: G6 e2e artifacts
-        run: bun run check:g6-e2e
+        run: bun run check:g6-e2e && bun run check:g6-topology
       - name: G7 security artifacts
         run: bun run check:g7-security
