@@ -2,28 +2,34 @@
 
 Implementation is complete only when all conditions below are true.
 
-## Functional Completion
+Audit sync date: 2026-02-12
 
-- Plan Agent x1 and Task Execution Agents xN run with local and remote dispatch.
-- Clarification gate resolves ambiguous/risky user intent before execution.
-- Sandbox execution is mandatory before production promotion.
+## Baseline Completion (`spec-pack` profile)
 
-## Contract Completion
+1. All baseline gates pass in CI and local verification runs:
+   - `bun run check:g0-docs`
+   - `bun run check:g1-contracts`
+   - `bun run lint:biome`
+   - `bun run typecheck:ts`
+   - `bun run check:g5-integration`
+   - `bun run check:g6-e2e`
+   - `bun run check:g6-topology`
+   - `bun run check:g7-security`
+2. Local and remote topology invariants for Plan Agent x1 and Task Execution Agents xN pass deterministic pseudo-dispatch validation (`bun run check:g6-topology`, `ORCH-INT-4001`).
+3. Clarification and promotion requirements remain contract-linked and executable in validation gates (`ORCH-UX-8001`, `ORCH-OPS-6001`, `ORCH-OPS-6004`).
+4. Contract compatibility checks pass for protobuf and schema artifacts (`bun run check:g1-contracts`, `ORCH-API-1001`).
+5. Security/logging requirements pass executable checks (`bun run check:g7-security`, `ORCH-OPS-6002`, `ORCH-OPS-6003`, `ORCH-SEC-5002`).
 
-- All contract files are versioned and validated.
-- Implementation conforms to contracts without ad hoc protocol drift.
+## Runtime Deployment Completion (`runtime-implementation` profile)
 
-## Quality Completion
+- Baseline criteria remain green.
+- Plan and execution runtime behavior is validated with executable runtime tests (not only schema/doc checks).
+- Clarification blocking and promotion controls are enforced in live execution paths.
+- Sandbox dry-run evidence is generated and required before production-impacting execution.
+- Runbooks and rollback procedures are validated by executable operational drills.
+- Every `ORCH-*` requirement has passing runtime evidence where runtime behavior is required.
 
-- Gates in the `spec-pack` profile pass in CI.
-- Static analysis and formatting pass for TypeScript.
-- Optional language checks pass when optional components are present.
+## Current Status Snapshot
 
-## Operational Completion
-
-- Runbooks exist for major incident classes.
-- Promotion policy and rollback policy are tested and documented.
-
-## Acceptance Completion
-
-- Every `ORCH-*` requirement in `docs/06-acceptance/requirements.yaml` has passing evidence.
+- `spec-pack` baseline: Ready (all executable gates passing).
+- `runtime-implementation` release readiness: Pending (runtime execution coverage not yet complete).
