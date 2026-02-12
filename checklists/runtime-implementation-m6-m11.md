@@ -19,13 +19,13 @@ Status levels are defined in `.agent/CompletionCriteria.md`.
 |---|---|---|
 | M5 | `phase-closed` | Runtime service skeleton and network gRPC host are complete. |
 | M6 | `phase-closed` | Persistence/state machine/idempotency constraints are complete for current runtime profile. |
-| M7 | `implemented-local` | Local/in-memory vertical slice is complete; real Postgres validated-runtime evidence is still required. |
-| M8 | `implemented-local` | Lease/retry/timeout/limits/chaos implementation is complete locally; validated-runtime evidence is pending. |
-| M9 | `implemented-local` | Plan Agent + Clarification Gate implementation is complete locally; validated-runtime evidence is pending. |
-| M10 | `implemented-local` | Skill/promotion/approval/rollback implementation is complete locally; validated-runtime evidence is pending. |
-| M11 | `implemented-local` | mTLS and remote-topology implementation is complete locally; validated-runtime evidence is pending. |
+| M7 | `phase-closed` | Real Postgres vertical-slice runtime evidence executed and linked. |
+| M8 | `phase-closed` | Postgres contention runtime evidence (renewal/reaper/retry/chaos) executed and linked. |
+| M9 | `phase-closed` | Submit-path clarification/plan integration runtime evidence executed and linked. |
+| M10 | `phase-closed` | Promotion/approval/rollback runtime-path evidence executed and linked. |
+| M11 | `phase-closed` | Transport-level mTLS evidence executed with fallback disabled and linked. |
 
-Row-level `[x]` markers in this checklist indicate `implemented-local` completion. Phase closure is governed by `.agent/Checklist.md` and `.agent/ExecPlan.md`.
+Row-level `[x]` markers in this checklist indicate runtime closure evidence is linked and executable.
 
 ## M6 - Persistence Layer and Closed-Set State Machine
 
@@ -48,6 +48,7 @@ Row-level `[x]` markers in this checklist indicate `implemented-local` completio
 | [x] | M7 | ORCH-CORE-0004 | Implement deterministic leasing order and lease issuance. | `src/core/orchestrator/lease-next-task.ts`, `src/core/persistence/lease-repository.ts` | `tests/runtime/lease-ordering.integration.test.ts` | Lease order follows `priority -> created_at -> id` with no ambiguity. |
 | [x] | M7 | ORCH-CORE-0004 | Implement `ReportResult` completion and retry-state handoff integration point. | `src/core/orchestrator/report-result.ts`, `src/core/runtime/grpc/server.ts` | `tests/runtime/report-result.integration.test.ts` | Task outcomes persist correctly and emit deterministic task terminal/non-terminal state. |
 | [x] | M7 | ORCH-INT-4001 | Wire local orchestrator/worker path through runtime services. | `src/core/orchestrator/index.ts`, `src/core/runtime/grpc/server.ts` | `tests/runtime/vertical-slice-local.e2e.test.ts` | Local flow `submit -> lease -> report -> workflow terminal` passes end-to-end. |
+| [x] | M7 | ORCH-INT-4001 | Add real Postgres E2E runtime evidence path for vertical slice. | `tests/runtime/postgres-fixture.ts`, `tests/runtime/vertical-slice-postgres.e2e.test.ts` | `tests/runtime/vertical-slice-postgres.e2e.test.ts` | Postgres-backed `submit -> lease -> report -> workflow terminal` evidence is executable when `ORCH_TEST_POSTGRES_DSN` is set. |
 | [x] | M7 | ORCH-CORE-0001 | Persist artifact references with immutable workflow linkage. | `src/core/orchestrator/register-artifact.ts`, `src/core/persistence/artifact-repository.ts` | `tests/runtime/artifact-registration.integration.test.ts` | Artifacts are stored and always trace back to immutable `workflow_id`. |
 
 ## M8 - Lease Renewal, Retry, Timeouts, Runtime Limits
@@ -60,13 +61,14 @@ Row-level `[x]` markers in this checklist indicate `implemented-local` completio
 | [x] | M8 | ORCH-OPS-6010 | Enforce plan/task timeout limits with configured units. | `src/core/orchestrator/timeout-enforcer.ts`, `src/core/runtime/config.ts` | `tests/runtime/timeout-enforcement.test.ts` | Plan timeout (60s) and task timeout (300s) enforce correctly via config. |
 | [x] | M8 | ORCH-OPS-6010 | Enforce tenant concurrency and payload-size limits with load shedding. | `src/core/orchestrator/runtime-limits.ts`, `src/core/runtime/config.ts` | `tests/runtime/runtime-limits.test.ts` | Tenant cap and payload cap are enforced and overloaded requests are shed. |
 | [x] | M8 | ORCH-CORE-0004 | Validate concurrency safety under multi-worker contention. | `tests/runtime/chaos-concurrency.test.ts` | `tests/runtime/chaos-concurrency.test.ts` | No double-execution or state corruption under concurrent leasing/reporting. |
+| [x] | M8 | ORCH-CORE-0004 | Add real Postgres contention evidence for renewal/reaper/retry/chaos behavior. | `tests/runtime/postgres-fixture.ts`, `tests/runtime/chaos-concurrency-postgres.e2e.test.ts` | `tests/runtime/chaos-concurrency-postgres.e2e.test.ts` | DB-level contention validates no double-exec and no state corruption under lease/retry/reaper paths. |
 
 ## M9 - Plan Agent and Clarification Gate
 
 | Status | Milestone | Requirement ID | Work Item | Target Files (create/update) | Required Tests | Done When |
 |---|---|---|---|---|---|---|
 | [x] | M9 | ORCH-CORE-0002 | Implement deterministic Plan Agent DAG generation without execution side effects. | `src/core/planning/plan-agent.ts`, `src/core/planning/dag-determinism.ts` | `tests/runtime/plan-agent-no-side-effects.test.ts`, `tests/runtime/dag-determinism-golden.test.ts` | Plan generation is deterministic and no side-effect capability is invoked. |
-| [x] | M9 | ORCH-UX-8001 | Implement clarification gate with one-question blocking policy. | `src/core/clarification/clarification-gate.ts`, `src/core/clarification/question-format.ts` | `tests/runtime/clarification-gate-blocking.e2e.test.ts` | Ambiguous/high-risk intent blocks execution and emits valid question payload. |
+| [x] | M9 | ORCH-UX-8001 | Implement clarification gate with one-question blocking policy. | `src/core/clarification/clarification-gate.ts`, `src/core/clarification/question-format.ts`, `src/core/orchestrator/submit-plan.ts` | `tests/runtime/clarification-gate-blocking.e2e.test.ts`, `tests/runtime/submit-path-clarification-plan.integration.test.ts` | Ambiguous/high-risk intent blocks execution and emits valid question payload in submit path. |
 | [x] | M9 | ORCH-UX-8001 | Implement clarification resolution and safe resume semantics. | `src/core/clarification/clarification-gate.ts`, `src/core/orchestrator/index.ts` | `tests/runtime/clarification-resume.e2e.test.ts` | Workflow resumes only after resolution and follows selected/default policy rules. |
 | [x] | M9 | ORCH-CORE-0002 | Implement `AdminService.CancelWorkflow` with deterministic cancellation behavior. | `src/core/orchestrator/cancel-workflow.ts`, `src/core/runtime/grpc/server.ts` | `tests/runtime/cancel-workflow.integration.test.ts` | Cancellation transitions are valid, idempotent, and side-effect-safe. |
 
@@ -79,13 +81,14 @@ Row-level `[x]` markers in this checklist indicate `implemented-local` completio
 | [x] | M10 | ORCH-OPS-6001 | Implement promotion state progression `sandbox -> staging -> prod` only. | `src/core/promotion/promotion-controller.ts` | `tests/runtime/promotion-path-policy.test.ts` | Direct `sandbox -> prod` is impossible and rejected with policy error. |
 | [x] | M10 | ORCH-OPS-6004 | Implement explicit approval gates for each promotion boundary. | `src/core/promotion/approval-gate.ts`, `src/core/promotion/promotion-controller.ts` | `tests/runtime/promotion-approval-required.test.ts` | Promotion proceeds only with explicit recorded approvals. |
 | [x] | M10 | ORCH-OPS-6004 | Enforce non-bypass control and deny-path behavior. | `src/core/promotion/promotion-controller.ts` | `tests/runtime/promotion-bypass-denied.test.ts` | Any bypass attempt fails with deterministic denial and audit trail. |
-| [x] | M10 | ORCH-OPS-6001 | Implement automatic rollback threshold policy. | `src/core/promotion/rollback-policy.ts` | `tests/runtime/rollback-threshold.test.ts` | Rollback triggers when error rate exceeds policy threshold and duration. |
+| [x] | M10 | ORCH-OPS-6001 | Implement automatic rollback threshold policy. | `src/core/promotion/rollback-policy.ts`, `src/core/promotion/promotion-controller.ts` | `tests/runtime/rollback-threshold.test.ts`, `tests/runtime/promotion-runtime-rollback.integration.test.ts` | Rollback triggers when error rate exceeds policy threshold and duration. |
 
 ## M11 - mTLS Enforcement and Remote Topology Hardening
 
 | Status | Milestone | Requirement ID | Work Item | Target Files (create/update) | Required Tests | Done When |
 |---|---|---|---|---|---|---|
 | [x] | M11 | ORCH-SEC-5001 | Implement gRPC mTLS server/client credential wiring. | `src/core/runtime/grpc/tls-config.ts`, `src/core/runtime/grpc/network-server.ts`, `src/core/runtime/grpc/client.ts` | `tests/runtime/mtls-enforcement.integration.test.ts` | Staging/prod reject non-mTLS connections and accept valid mTLS peers only. |
+| [x] | M11 | ORCH-SEC-5001 | Add transport-level mTLS evidence path independent from metadata fallback. | `src/core/runtime/config.ts`, `src/core/runtime/grpc/tls-config.ts`, `tests/runtime/mtls-transport-level.integration.test.ts` | `tests/runtime/mtls-transport-level.integration.test.ts` | Transport-level handshake rejection/acceptance is executable with metadata fallback disabled. |
 | [x] | M11 | ORCH-SEC-5001 | Enforce environment policy (`sandbox` optional, `staging/prod` required). | `src/core/runtime/config.ts`, `src/core/runtime/grpc/tls-config.ts` | `tests/runtime/mtls-matrix.integration.test.ts` | mTLS requirement matrix matches policy in all environments. |
 | [x] | M11 | ORCH-INT-4001 | Validate remote worker connectivity and execution over `grpcs://`. | `src/core/orchestrator/index.ts`, `src/core/runtime/grpc/network-server.ts` | `tests/runtime/remote-worker.e2e.test.ts` | Remote topology completes workflows without semantic drift from local mode. |
 | [x] | M11 | ORCH-INT-4001 | Validate unauthorized/forbidden remote execution rejection paths. | `src/core/security/worker-identity.ts`, `src/core/runtime/grpc/server.ts` | `tests/runtime/unauthorized-forbidden-rejection.test.ts` | Unauthorized and forbidden requests are rejected with correct error semantics. |

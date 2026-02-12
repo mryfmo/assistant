@@ -11,7 +11,7 @@ function isBunRuntime(): boolean {
 }
 
 export function usesMetadataMtlsFallback(config: RuntimeConfig): boolean {
-  return config.requireMtls && isBunRuntime();
+  return config.requireMtls && config.allowMtlsMetadataFallback && isBunRuntime();
 }
 
 function readPemFile(path: string, fieldName: string): Buffer {

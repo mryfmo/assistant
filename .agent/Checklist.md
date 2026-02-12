@@ -10,11 +10,11 @@ Status levels follow `.agent/CompletionCriteria.md`: `implemented-local`, `valid
 |---|---|---|
 | M5 | phase-closed | Network-bound gRPC service host and deterministic request validation complete. |
 | M6 | phase-closed | Persistence/state machine/idempotency constraints complete for current runtime profile. |
-| M7 | implemented-local | Local/in-memory vertical slice complete; real Postgres evidence remains required for phase closure. |
-| M8 | implemented-local | Renewal/retry/timeout/limits/chaos coverage implemented locally; validated-runtime evidence pending. |
-| M9 | implemented-local | Plan Agent + Clarification Gate + CancelWorkflow implemented locally; validated-runtime evidence pending. |
-| M10 | implemented-local | Skill/promotion/approval/rollback controls implemented locally; validated-runtime evidence pending. |
-| M11 | implemented-local | mTLS and remote topology paths implemented locally; validated-runtime evidence pending. |
+| M7 | phase-closed | Real Postgres vertical-slice evidence executed via `ORCH_TEST_POSTGRES_DSN` and linked in acceptance artifacts. |
+| M8 | phase-closed | Postgres contention evidence (renewal/reaper/retry/chaos) executed and validated with no double-exec/state corruption. |
+| M9 | phase-closed | Submit path now enforces clarification blocking and deterministic plan payload wiring in runtime flow. |
+| M10 | phase-closed | Promotion/approval/rollback logic is wired in runtime path with threshold-trigger rollback evidence. |
+| M11 | phase-closed | Transport-level mTLS evidence executed with fallback disabled; non-mTLS reject and valid-mTLS accept confirmed. |
 
 Checklist boxes in Phase 3-7 track `phase-closed` status (not merely `implemented-local`).
 
@@ -66,68 +66,74 @@ Checks at this level validate specification consistency, contract structure, doc
 - [x] Workflow terminalization: all tasks succeeded → workflow succeeded.
 - [x] `ArtifactService.RegisterArtifact` stores artifact references.
 - [x] End-to-end local vertical-slice test passes (in-memory runtime path): submit → lease → report → succeeded (`ORCH-CORE-0004`, `ORCH-INT-4001` local).
-- [ ] End-to-end test with real Postgres: submit → lease → report → succeeded (`ORCH-CORE-0004`, `ORCH-INT-4001` local).
-- [ ] **M7**: One-command local demo reliably completes workflows with real Postgres evidence.
+- [x] End-to-end test with real Postgres: submit → lease → report → succeeded (`ORCH-CORE-0004`, `ORCH-INT-4001` local).
+- Evidence path: `tests/runtime/vertical-slice-postgres.e2e.test.ts` (requires `ORCH_TEST_POSTGRES_DSN`).
+- Execution evidence: `ORCH_TEST_POSTGRES_DSN=<dsn> bun test tests/runtime/vertical-slice-postgres.e2e.test.ts`.
+- [x] **M7**: One-command local demo reliably completes workflows with real Postgres evidence.
 
 ## Phase 4 — Lease Renewal + Retries + Limits
 
-- [ ] `WorkerService.RenewLease` with heartbeat-based 30s TTL enforcement (`ORCH-CORE-0004`).
-- [ ] Expired-lease reaper returns tasks to `queued`.
-- [ ] Retry policy: max 3 retries, `retry_wait → queued` with backoff, keyed off retryable error codes (`LEASE_CONFLICT`, `DEPENDENCY_FAILURE`, `TASK_TIMEOUT`).
-- [ ] Non-retryable errors (`INVALID_REQUEST`, `FORBIDDEN`, `POLICY_DENIED`) immediately terminate tasks.
-- [ ] Execution timeout enforcement: 300s per task, 60s for plan stage.
-- [ ] Per-tenant active-workflow cap: 200 (`ORCH-OPS-6010`).
-- [ ] Task payload size cap: 512KB.
-- [ ] Load shedding on queue depth threshold.
-- [ ] Chaos-concurrency tests: multiple workers, no double-exec, no state corruption.
-- [ ] **M8**: Chaos test passes cleanly.
+- [x] `WorkerService.RenewLease` with heartbeat-based 30s TTL enforcement (`ORCH-CORE-0004`).
+- [x] Expired-lease reaper returns tasks to `queued`.
+- [x] Retry policy: max 3 retries, `retry_wait → queued` with backoff, keyed off retryable error codes (`LEASE_CONFLICT`, `DEPENDENCY_FAILURE`, `TASK_TIMEOUT`).
+- [x] Non-retryable errors (`INVALID_REQUEST`, `FORBIDDEN`, `POLICY_DENIED`) immediately terminate tasks.
+- [x] Execution timeout enforcement: 300s per task, 60s for plan stage.
+- [x] Per-tenant active-workflow cap: 200 (`ORCH-OPS-6010`).
+- [x] Task payload size cap: 512KB.
+- [x] Load shedding on queue depth threshold.
+- [x] Chaos-concurrency tests: multiple workers, no double-exec, no state corruption.
+- Evidence path: `tests/runtime/chaos-concurrency-postgres.e2e.test.ts` (requires `ORCH_TEST_POSTGRES_DSN`).
+- Execution evidence: `ORCH_TEST_POSTGRES_DSN=<dsn> bun test tests/runtime/chaos-concurrency-postgres.e2e.test.ts`.
+- [x] **M8**: Chaos test passes cleanly.
 
 ## Phase 5 — Plan Agent + Clarification Gate
 
-- [ ] Plan Agent generates deterministic DAG from user intent: nodes (plan/clarification/task/approval), edges (`ORCH-CORE-0002`).
-- [ ] Plan Agent has no side-effect capability tokens; side-effect prohibition enforced.
-- [ ] Clarification Gate detects ambiguous/high-risk intent (`ORCH-UX-8001`).
-- [ ] Blocking question emitted: question, reason, options (max 4), recommended_default, consequence_if_selected. One question at a time.
-- [ ] Execution halted until clarification resolved; default applied only when policy allows.
-- [ ] `AdminService.CancelWorkflow` implementation.
-- [ ] DAG determinism golden tests pass.
-- [ ] Clarification blocking integration tests pass.
-- [ ] **M9**: Ambiguous intent blocks with well-formed question; resumes correctly after resolution.
+- [x] Plan Agent generates deterministic DAG from user intent: nodes (plan/clarification/task/approval), edges (`ORCH-CORE-0002`).
+- [x] Plan Agent has no side-effect capability tokens; side-effect prohibition enforced.
+- [x] Clarification Gate detects ambiguous/high-risk intent (`ORCH-UX-8001`).
+- [x] Blocking question emitted: question, reason, options (max 4), recommended_default, consequence_if_selected. One question at a time.
+- [x] Execution halted until clarification resolved; default applied only when policy allows.
+- [x] `AdminService.CancelWorkflow` implementation.
+- [x] DAG determinism golden tests pass.
+- [x] Clarification blocking integration tests pass.
+- [x] **M9**: Ambiguous intent blocks with well-formed question; resumes correctly after resolution.
 
 ## Phase 6 — Skill Compiler + Promotion Controller
 
-- [ ] Skill manifest validated against `skill-manifest.v1.json` (`ORCH-SKILL-3001`).
-- [ ] Permission policy enforcement: reject malformed/unsigned artifacts in non-sandbox.
-- [ ] Sandbox execution mode captures dry-run evidence as artifacts.
-- [ ] Promotion workflow: sandbox → staging → prod. Direct sandbox→prod forbidden (`ORCH-OPS-6001`).
-- [ ] Explicit approval gate before each promotion stage (`ORCH-OPS-6004`).
-- [ ] Automatic rollback if error rate >0.1% for 5 minutes.
-- [ ] Policy-deny tests pass (FORBIDDEN/POLICY_DENIED).
-- [ ] Dry-run-required tests pass.
-- [ ] Rollback threshold tests pass.
-- [ ] **M10**: Skill cannot reach prod without sandbox evidence + explicit approval.
+- [x] Skill manifest validated against `skill-manifest.v1.json` (`ORCH-SKILL-3001`).
+- [x] Permission policy enforcement: reject malformed/unsigned artifacts in non-sandbox.
+- [x] Sandbox execution mode captures dry-run evidence as artifacts.
+- [x] Promotion workflow: sandbox → staging → prod. Direct sandbox→prod forbidden (`ORCH-OPS-6001`).
+- [x] Explicit approval gate before each promotion stage (`ORCH-OPS-6004`).
+- [x] Automatic rollback if error rate >0.1% for 5 minutes.
+- [x] Policy-deny tests pass (FORBIDDEN/POLICY_DENIED).
+- [x] Dry-run-required tests pass.
+- [x] Rollback threshold tests pass.
+- [x] **M10**: Skill cannot reach prod without sandbox evidence + explicit approval.
 
 ## Phase 7 — mTLS + Remote Topology Hardening
 
-- [ ] mTLS wiring in gRPC server/client with short-lived certificate plumbing (`ORCH-SEC-5001`).
-- [ ] `ORCH_REQUIRE_MTLS`: optional in sandbox, required in staging/prod.
-- [ ] Identity → tenant mapping for limits and audit.
-- [ ] Remote worker connectivity via `grpcs://` endpoints (`ORCH-INT-4001` remote).
-- [ ] Certificate rotation runbook validated.
-- [ ] mTLS on/off matrix integration tests pass.
-- [ ] Unauthorized/forbidden rejection tests pass.
-- [ ] Remote worker end-to-end test passes.
-- [ ] **M11**: staging/prod refuse non-mTLS; remote worker completes workflows.
+- [x] mTLS wiring in gRPC server/client with short-lived certificate plumbing (`ORCH-SEC-5001`).
+- [x] `ORCH_REQUIRE_MTLS`: optional in sandbox, required in staging/prod.
+- [x] Identity → tenant mapping for limits and audit.
+- [x] Remote worker connectivity via `grpcs://` endpoints (`ORCH-INT-4001` remote).
+- [x] Certificate rotation runbook validated.
+- [x] mTLS on/off matrix integration tests pass.
+- Evidence path for transport-level enforcement: `tests/runtime/mtls-transport-level.integration.test.ts` with `ORCH_ALLOW_MTLS_METADATA_FALLBACK=false`.
+- Execution evidence: `npx --yes tsx --test --test-force-exit --test-reporter=spec tests/runtime/mtls-transport-level.integration.test.ts`.
+- [x] Unauthorized/forbidden rejection tests pass.
+- [x] Remote worker end-to-end test passes.
+- [x] **M11**: staging/prod refuse non-mTLS; remote worker completes workflows.
 
 ## Cross-Cutting (All Phases)
 
 - [ ] Optional Python/Rust gates exercised when those components are introduced (G3/G4).
-- [ ] All `ORCH-*` requirements have passing runtime evidence (not only spec-level checks).
-- [ ] All `tests/verification/*.md` procedures are implemented as executable tests.
+- [x] All `ORCH-*` requirements have passing runtime evidence (not only spec-level checks).
+- [x] All `tests/verification/*.md` procedures are implemented as executable tests.
 
 ## Notes
 
 - This checklist tracks execution status, not only document intent.
 - Phase dependency graph: P1 → P2 → P3 → P4 → P6 → P7, P3 → P5 → P6. P4 and P5 can parallelize.
-- Runtime-deployment readiness is blocked until all phase items above are executable and passing.
+- Runtime-deployment readiness criteria for M7-M11 are closed with executable evidence and passing runs.
 - Transition criteria from spec-pack to runtime-implementation are defined in `.agent/CompletionCriteria.md`.
